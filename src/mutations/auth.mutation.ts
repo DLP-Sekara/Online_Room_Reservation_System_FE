@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { errorToast, successToast } from '../utils/Alert';
+import { errorToast, successToast } from '../components/common/Alert';
 import type { APIResponse, LoginTypes } from '../types/onBoarding.interfaces';
 import authService from '../services/auth.services';
 import { useNavigate } from 'react-router-dom';

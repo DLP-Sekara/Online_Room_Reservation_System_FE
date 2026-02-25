@@ -13,11 +13,12 @@ const Login = () => {
   const { mutateAsync: login, isPending: loading } = signInMutation();
 
   const onFinish = async (value: LoginTypes) => {
-    const data = {
-      email: value.email,
-      password: value.password,
-    };
-    await login(data);
+    // const data = {
+    //   email: value.email,
+    //   password: value.password,
+    // };
+    // await login(data);
+    navigate('/dashboard', { replace: true });
   };
 
   return (
