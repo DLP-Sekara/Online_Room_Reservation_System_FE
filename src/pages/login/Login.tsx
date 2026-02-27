@@ -25,7 +25,7 @@ const Login = () => {
     <AdminOnBoardingLayout>
       <div>
         <h2 className="font-spaceGrotesk text-center text-[20px] font-bold text-black md:text-[40px]">
-          Ocean View Resort Admin Portal
+          Ocean View Resort <br />Admin Portal
         </h2>
         <p className="font-regular py-5 text-center text-[16px] text-[#2F2F2F] md:text-[20px]">
           Welcome back. Please sign in to manage bookings, <br />

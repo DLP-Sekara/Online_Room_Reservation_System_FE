@@ -9,15 +9,30 @@ import {
   LogOut,
 } from 'lucide-react';
 
+import { Link, useLocation } from 'react-router-dom';
+
 const MainSidebar = () => {
+  const location = useLocation();
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
-    { name: 'Reservations', icon: <ClipboardList size={20} />, path: '/reservations' },
-    { name: 'Rooms', icon: <Bed size={20} />, path: '/rooms' },
-    { name: 'Meal Management', icon: <Utensils size={20} />, path: '/meals' },
-    { name: 'Billing & Reports', icon: <Receipt size={20} />, path: '/billing' },
-    { name: 'Users', icon: <Users size={20} />, path: '/users' },
-    { name: 'Settings', icon: <Settings size={20} />, path: '/settings' },
+    {
+      name: 'Reservations',
+      icon: <ClipboardList size={20} />,
+      path: '/dashboard/reservations',
+    },
+    { name: 'Rooms', icon: <Bed size={20} />, path: '/dashboard/rooms' },
+    {
+      name: 'Meal Management',
+      icon: <Utensils size={20} />,
+      path: '/dashboard/meal-management',
+    },
+    {
+      name: 'Billing & Reports',
+      icon: <Receipt size={20} />,
+      path: '/dashboard/billing-report',
+    },
+    { name: 'Users', icon: <Users size={20} />, path: '/dashboard/users' },
+    { name: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings' },
   ];
 
   return (
@@ -33,15 +48,23 @@ const MainSidebar = () => {
 
       {/* Navigation Items */}
       <nav className="mt-6 flex-1 space-y-2 px-4">
-        {menuItems.map((item, index) => (
-          <div
-            key={index}
-            className="group flex cursor-pointer items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200 hover:bg-blue-600/20 hover:text-blue-300"
-          >
-            <div className="text-blue-400 group-hover:text-blue-300">{item.icon}</div>
-            <span className="text-sm font-medium">{item.name}</span>
-          </div>
-        ))}
+        {menuItems.map((item, index) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              to={item.path}
+              key={index}
+              className={`group flex cursor-pointer items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200 hover:bg-blue-600/20 hover:text-blue-300 ${isActive ? 'bg-blue-600/20 text-blue-300' : ''}`}
+            >
+              <div
+                className={`group-hover:text-blue-300 ${isActive ? 'text-blue-300' : 'text-blue-400'}`}
+              >
+                {item.icon}
+              </div>
+              <span className="text-sm font-medium">{item.name}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* 🚪 Logout Section */}
