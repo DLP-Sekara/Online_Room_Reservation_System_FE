@@ -1,4 +1,4 @@
-import { Card, Col, Row, Tag, Button } from 'antd';
+import { Col, Row, Tag, Button } from 'antd';
 import {
   UserPlus,
   BedDouble,
