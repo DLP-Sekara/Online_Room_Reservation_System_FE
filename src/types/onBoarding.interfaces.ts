@@ -10,6 +10,7 @@ export interface ProtectedRouteTypes {
 
 export interface APIResponse {
   success: boolean;
+  statusCode: number;
   message: string;
   data: any;
 }
