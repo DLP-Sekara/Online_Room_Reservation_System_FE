@@ -13,19 +13,23 @@ const Login = () => {
   const { mutateAsync: login, isPending: loading } = signInMutation();
 
   const onFinish = async (value: LoginTypes) => {
-    // const data = {
-    //   email: value.email,
-    //   password: value.password,
-    // };
-    // await login(data);
-    navigate('/dashboard', { replace: true });
+    const data = {
+      email: value.email,
+      password: value.password,
+    };
+    const response = await login(data);
+    console.log(response);
+    if (response.success) {
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   return (
     <AdminOnBoardingLayout>
       <div>
         <h2 className="font-spaceGrotesk text-center text-[20px] font-bold text-black md:text-[40px]">
-          Ocean View Resort <br />Admin Portal
+          Ocean View Resort <br />
+          Admin Portal
         </h2>
         <p className="font-regular py-5 text-center text-[16px] text-[#2F2F2F] md:text-[20px]">
           Welcome back. Please sign in to manage bookings, <br />

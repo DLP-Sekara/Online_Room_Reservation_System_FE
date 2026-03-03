@@ -11,6 +11,7 @@ const defaultConfig: AxiosRequestConfig = {
     'Access-Control-Allow-Origin': '*',
     'Cache-Control': 'no-cache',
   },
+  withCredentials: true,
 };
 
 // Separate instances

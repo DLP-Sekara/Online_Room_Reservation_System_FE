@@ -30,12 +30,16 @@ const handleRequest = async ({
 const authService = () => {
   return {
     signInService: (data: LoginTypes) =>
-      handleRequest({ url: 'api/v1/admin/login', data }),
+      handleRequest({ url: 'api/v1/auth/login', data }),
 
     signUpService: (data: any) => handleRequest({ url: 'api/v1/admin/signup', data }),
 
     forgotPasswordService: (data: ResetPasswordTypes) =>
       handleRequest({ url: 'api/v1/admin/forgot-password', data }),
+
+    signOutService: () => handleRequest({ url: 'api/v1/auth/logout' }),
+
+    heckUserSessionService: () => handleRequest({ url: 'api/v1/auth/check-session' }),
   };
 };
 
