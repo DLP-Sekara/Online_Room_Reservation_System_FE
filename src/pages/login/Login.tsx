@@ -95,13 +95,14 @@ const Login = () => {
                   }}
                 />
               </Form.Item>
-
-              <span
-                className="hover:text-primary -mt-4 flex w-full cursor-pointer justify-end text-[12px] font-medium text-[#0168FF] underline lg:text-[14px]"
-                onClick={() => navigate('/reset-password')}
-              >
-                Forgot/Change PIN ?
-              </span>
+              <div className="flex flex-row justify-end">
+                <span
+                  className="hover:text-primary -mt-4 flex w-fit cursor-pointer justify-end text-[12px] font-medium text-[#0168FF] underline lg:text-[14px]"
+                  onClick={() => navigate('/reset-password')}
+                >
+                  Forgot/Change PIN ?
+                </span>
+              </div>
 
               <CustomButton
                 type="primary"

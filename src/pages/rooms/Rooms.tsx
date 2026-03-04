@@ -1,130 +1,178 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
-  Tag,
   Button,
   Input,
   Drawer,
   Space,
   Select,
   Form,
-  Divider,
-  message,
   Badge,
+  Popconfirm,
 } from 'antd';
-import {
-  Search,
-  Plus,
-  Filter,
-  Edit,
-  Trash2,
-  Bed,
-  Info,
-  CheckCircle,
-  RefreshCcw,
-} from 'lucide-react';
+import { Plus, Edit, Trash2, Bed, Info } from 'lucide-react';
+import ActionDialog from '../../components/common/ActionDialog';
+import CustomButton from '../../components/common/CustomButton';
+import roomMutation from '../../mutations/room.mutation';
+import type { RoomType } from '../../types/rooms';
+import type { Room } from '../../types/services.interfaces';
+import { errorToast } from '../../components/common/Alert';
 
 const { Option } = Select;
 
 const Rooms = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState('add');
+  const [roomTypeModalOpen, setRoomTypeModalOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [isRoomTypeDrawerOpen, setIsRoomTypeDrawerOpen] = useState(false);
   const [form] = Form.useForm();
 
-  interface Room {
-    key: string;
-    roomNo: string;
-    type: string;
-    price: string;
-    status: string;
-    cleaning: string;
-  }
+  const {
+    getAllRoomTypesMutation,
+    createRoomTypeMutation,
+    deleteRoomTypeMutation,
+    createRoomMutation,
+    getAllRoomsMutation,
+    updateRoomMutation,
+    deleteRoomMutation,
+  } = roomMutation();
+  const { data: rooms } = getAllRoomsMutation();
+  const { data: roomTypes } = getAllRoomTypesMutation();
+  const { mutateAsync: createRoomType, isPending: createRoomTypeLoading } =
+    createRoomTypeMutation();
+  const { mutateAsync: deleteRoomType, isPending: deleteRoomTypeLoading } =
+    deleteRoomTypeMutation();
+  const { mutateAsync: createRoom, isPending: createRoomLoading } = createRoomMutation();
+  const { mutateAsync: updateRoom, isPending: updateRoomLoading } = updateRoomMutation();
+  const { mutateAsync: deleteRoom, isPending: deleteRoomLoading } = deleteRoomMutation();
 
-  // Sample Data for Rooms
-  const dataSource: Room[] = [
-    {
-      key: '1',
-      roomNo: '101',
-      type: 'Deluxe King',
-      price: '25,000',
-      status: 'Available',
-      cleaning: 'Ready',
-    },
-    {
-      key: '2',
-      roomNo: '102',
-      type: 'Deluxe King',
-      price: '25,000',
-      status: 'Occupied',
-      cleaning: 'Ready',
-    },
-    {
-      key: '3',
-      roomNo: '205',
-      type: 'Standard',
-      price: '15,000',
-      status: 'Available',
-      cleaning: 'Dirty',
-    },
-  ];
+  useEffect(() => {
+    if (drawerType === 'edit' && selectedRoom) {
+      form.setFieldsValue({
+        roomNo: selectedRoom.roomNumber,
+        type: selectedRoom.typeId,
+        status: selectedRoom.status,
+      });
+    } else {
+      form.resetFields();
+    }
+  }, [selectedRoom, drawerType, form, isDrawerOpen]);
 
   // Table Columns
   const columns = [
     {
       title: 'Room No',
-      dataIndex: 'roomNo',
-      key: 'roomNo',
+      dataIndex: 'roomNumber',
+      key: 'roomNumber',
       render: (text: string) => <span className="font-bold text-blue-600">{text}</span>,
     },
-    { title: 'Room Type', dataIndex: 'type', key: 'type' },
     {
-      title: 'Price (LKR)',
-      dataIndex: 'price',
-      key: 'price',
-      render: (val: string) => <span className="font-semibold">{val}</span>,
+      title: 'Room Type',
+      dataIndex: 'typeId',
+      key: 'typeId',
+      render: (text: string) => (
+        <span className="font-bold text-blue-600">
+          {roomTypes?.data?.find((item: RoomType) => item.typeId === text)?.typeName}
+        </span>
+      ),
     },
+
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: 'Available' | 'Occupied') => (
-        <Badge status={status === 'Available' ? 'success' : 'error'} text={status} />
-      ),
-    },
-    {
-      title: 'Cleaning',
-      dataIndex: 'cleaning',
-      key: 'cleaning',
-      render: (status: 'Ready' | 'Dirty') => (
-        <Tag
-          icon={status === 'Ready' ? <CheckCircle size={12} /> : <RefreshCcw size={12} />}
-          color={status === 'Ready' ? 'blue' : 'warning'}
-        >
-          {status}
-        </Tag>
-      ),
+
+      render: (status: string) => {
+        const statusMap: Record<string, 'success' | 'error' | 'warning' | 'processing'> =
+          {
+            AVAILABLE: 'success',
+            OCCUPIED: 'error',
+            MAINTENANCE: 'warning',
+            CLEANING: 'processing',
+          };
+        return (
+          <Badge
+            status={
+              statusMap[status.toUpperCase() as keyof typeof statusMap] || 'default'
+            }
+            text={status}
+          />
+        );
+      },
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: () => (
+      render: (record: any) => (
         <Space size="middle">
           <Button
             type="text"
             icon={<Edit size={18} className="text-gray-400 hover:text-orange-500" />}
             onClick={() => {
+              setSelectedRoom(record);
               setDrawerType('edit');
               setIsDrawerOpen(true);
             }}
+            loading={updateRoomLoading}
           />
-          <Button
-            type="text"
-            icon={<Trash2 size={18} className="text-gray-400 hover:text-red-500" />}
-          />
+          <Popconfirm
+            title="Delete the room"
+            description="Are you sure to delete this room?"
+            onConfirm={() => {
+              deleteRoom(record.roomId);
+            }}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button
+              type="text"
+              icon={<Trash2 size={18} className="text-gray-400 hover:text-red-500" />}
+              loading={deleteRoomLoading}
+            />
+          </Popconfirm>
         </Space>
       ),
     },
   ];
+
+  const handleCreateRoomType = async (values: any) => {
+    const data = {
+      typeName: values.type_name,
+      pricePerNight: values.price,
+    };
+    await createRoomType(data);
+    setRoomTypeModalOpen(false);
+    form.resetFields();
+  };
+
+  const handleCreateRoom = async (values: any) => {
+    const data = {
+      roomNumber: values.roomNo,
+      typeId: values.type,
+      status: values.status,
+    };
+    const response = await createRoom(data);
+    if (response.success) {
+      setIsDrawerOpen(false);
+      form.resetFields();
+    }
+  };
+
+  const handleUpdateRoom = async (values: any) => {
+    const data = {
+      roomId: selectedRoom?.roomId,
+      roomNumber: values.roomNo,
+      typeId: values.type,
+      status: values.status,
+    };
+    const response = await updateRoom(data);
+    if (response.success) {
+      setIsDrawerOpen(false);
+      form.resetFields();
+      setSelectedRoom(null);
+    }
+  };
 
   return (
     <div className="animate-in fade-in space-y-6 duration-500">
@@ -136,44 +184,56 @@ const Rooms = () => {
             Manage room inventory, pricing and status
           </p>
         </div>
-        <Button
-          type="primary"
-          size="large"
-          icon={<Plus size={20} />}
-          onClick={() => {
-            setDrawerType('add');
-            setIsDrawerOpen(true);
-          }}
-          className="flex h-12 items-center gap-2 rounded-xl border-none bg-blue-600 shadow-lg hover:bg-orange-500"
-        >
-          Add New Room
-        </Button>
-      </div>
 
+        <div className="flex gap-4">
+          <Button
+            type="primary"
+            size="large"
+            icon={<Plus size={20} />}
+            onClick={() => {
+              setDrawerType('add');
+              setIsDrawerOpen(true);
+            }}
+            className="flex h-12 items-center gap-2 rounded-xl border-none bg-blue-600 shadow-lg hover:bg-orange-500"
+          >
+            Add New Room
+          </Button>
+          <Button
+            // type="default"
+            size="large"
+            onClick={() => {
+              setIsRoomTypeDrawerOpen(true);
+            }}
+            className="flex h-12 items-center gap-2 rounded-xl border-none bg-orange-500 shadow-lg hover:bg-orange-500"
+          >
+            Room Types
+          </Button>
+        </div>
+      </div>
       {/* --- 2. Filter & Search Bar --- */}
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
+      {/* <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
         <Input
           prefix={<Search size={18} className="text-gray-400" />}
           placeholder="Search room number..."
-          className="h-11 w-full rounded-xl border-none shadow-sm md:w-80"
+          className="h-11 w-full shadow-sm md:w-80"
         />
-        <Select defaultValue="all" className="h-11 w-44 rounded-xl border-none shadow-sm">
-          <Option value="all">All Room Types</Option>
-          <Option value="deluxe">Deluxe King</Option>
-          <Option value="standard">Standard</Option>
-        </Select>
-        <Button
-          icon={<Filter size={18} />}
-          className="h-11 rounded-xl border-none shadow-sm"
+        <Select
+          defaultValue="all"
+          className="h-11 w-44 rounded-xl border-none shadow-sm"
+          allowClear
+          placeholder="Select Room Type"
         >
-          More Filters
-        </Button>
-      </div>
-
+          {roomTypes?.data?.map((item: RoomType) => (
+            <Option key={item.typeId} value={item.typeId}>
+              {item.typeName}
+            </Option>
+          ))}
+        </Select>
+      </div> */}
       {/* --- 3. Main Data Table --- */}
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
-          dataSource={dataSource}
+          dataSource={rooms?.data}
           columns={columns}
           pagination={{ pageSize: 8 }}
           className="custom-table"
@@ -191,21 +251,14 @@ const Rooms = () => {
         width={450}
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
-        extra={
-          <Space>
-            <Button onClick={() => setIsDrawerOpen(false)}>Cancel</Button>
-            <Button
-              type="primary"
-              className="rounded-lg border-none bg-blue-600"
-              onClick={() => message.success('Room Updated Successfully!')}
-            >
-              Save Changes
-            </Button>
-          </Space>
-        }
         className="rounded-l-[2rem]"
       >
-        <Form form={form} layout="vertical" className="space-y-4">
+        <Form
+          form={form}
+          layout="vertical"
+          className="space-y-4"
+          onFinish={drawerType === 'add' ? handleCreateRoom : handleUpdateRoom}
+        >
           <div className="mb-6 flex items-center gap-3 rounded-2xl border border-orange-100 bg-orange-50 p-4">
             <Bed className="text-orange-500" size={24} />
             <div>
@@ -217,35 +270,7 @@ const Rooms = () => {
               </p>
             </div>
           </div>
-
-          <Divider
-            orientation="left"
-            className="text-xs font-normal uppercase text-gray-400"
-          >
-            Room Configuration
-          </Divider>
-
-          <Form.Item label="Room Number" name="roomNo" rules={[{ required: true }]}>
-            <Input placeholder="e.g. 101, 205" className="h-10 rounded-lg" />
-          </Form.Item>
-
-          <Form.Item label="Room Type" name="type" rules={[{ required: true }]}>
-            <Select placeholder="Select Type" className="rounded-lg">
-              <Option value="deluxe">Deluxe King (LKR 25,000)</Option>
-              <Option value="standard">Standard (LKR 15,000)</Option>
-              <Option value="suite">Luxury Suite (LKR 45,000)</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Cleaning Status" name="cleaning">
-            <Select defaultValue="Ready">
-              <Option value="Ready">Ready (Cleaned)</Option>
-              <Option value="Dirty">Dirty (Needs Cleaning)</Option>
-              <Option value="Maintenance">Under Maintenance</Option>
-            </Select>
-          </Form.Item>
-
-          <div className="mt-8 rounded-2xl bg-blue-50 p-5">
+          <div className="mt-4 rounded-2xl bg-blue-50 p-5">
             <h4 className="mb-2 flex items-center gap-2 font-bold text-blue-800">
               <Info size={16} /> Admin Note
             </h4>
@@ -254,8 +279,180 @@ const Rooms = () => {
               affect existing active reservations.
             </p>
           </div>
+
+          <Form.Item label="Room Number" name="roomNo" rules={[{ required: true }]}>
+            <Input placeholder="e.g. 101, 205" className="h-10 rounded-lg" />
+          </Form.Item>
+
+          <Form.Item label="Room Type" name="type" rules={[{ required: true }]}>
+            <Select placeholder="Select Type" className="rounded-lg">
+              {roomTypes?.data?.map((item: RoomType) => (
+                <Option key={item.typeId} value={item.typeId}>
+                  {item.typeName}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item label="Cleaning Status" name="status" rules={[{ required: true }]}>
+            <Select className="rounded-lg" placeholder="Select Status">
+              <Option value="AVAILABLE">Available</Option>
+              <Option value="OCCUPIED">Occupied</Option>
+              <Option value="MAINTENANCE">Maintenance</Option>
+              <Option value="CLEANING">Cleaning</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item className="flex justify-end !gap-2 !space-x-2">
+            <Button onClick={() => setIsDrawerOpen(false)}>Cancel</Button>
+            <Button
+              type="primary"
+              className="ml-4 rounded-lg border-none bg-blue-600"
+              htmlType="submit"
+              loading={createRoomLoading}
+            >
+              Save Changes
+            </Button>
+          </Form.Item>
         </Form>
       </Drawer>
+
+      {/* Room type drawer */}
+      <Drawer
+        title={<span className="text-xl font-bold">Room Types</span>}
+        placement="right"
+        width={400}
+        onClose={() => setIsRoomTypeDrawerOpen(false)}
+        open={isRoomTypeDrawerOpen}
+        className="rounded-l-[2rem]"
+      >
+        <div className="space-y-6">
+          <Button
+            type="primary"
+            size="large"
+            icon={<Plus size={20} />}
+            onClick={() => setRoomTypeModalOpen(true)}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-none bg-orange-500 shadow-lg hover:bg-orange-600"
+          >
+            Create New Room Type
+          </Button>
+
+          <div className="grid gap-4">
+            {roomTypes?.data.map((item: any, idx: any) => (
+              <div
+                key={idx}
+                className="group relative flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-orange-200 hover:shadow-md"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500 group-hover:bg-orange-100">
+                  <Bed size={24} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-800">{item.typeName}</h4>
+                  <div className="flex items-center gap-3 text-sm text-gray-500">
+                    <span>LKR {item.pricePerNight}</span>
+                    <span className="h-1 w-1 rounded-full bg-gray-300" />
+
+                    <span>
+                      {rooms?.data?.filter((room: any) => room.typeId === item.typeId)
+                        ?.length || 0}{' '}
+                      Rooms
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="text"
+                  icon={<Trash2 size={18} className="text-gray-400 hover:text-red-500" />}
+                  onClick={() => {
+                    if (rooms?.data?.some((room: any) => room.typeId === item.typeId)) {
+                      errorToast('Cannot delete room type with existing rooms');
+                      return;
+                    }
+                    deleteRoomType(item.typeId);
+                  }}
+                  loading={deleteRoomTypeLoading}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Drawer>
+
+      {/*Add new room type  */}
+      <ActionDialog
+        modalOpen={roomTypeModalOpen}
+        handleCancel={() => setRoomTypeModalOpen(false)}
+        title={
+          <>
+            <Bed className="text-orange-500" size={24} />
+            Add New Room Type
+          </>
+        }
+        children={
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={(values) => {
+              handleCreateRoomType(values);
+            }}
+            className="space-y-4"
+          >
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-orange-100 bg-orange-50 p-4">
+              <Bed className="text-orange-500" size={24} />
+              <div>
+                <p className="text-xs font-bold uppercase text-orange-600">
+                  Room Inventory
+                </p>
+                <p className="text-sm font-medium text-orange-900">
+                  Update room status manually for maintenance.
+                </p>
+              </div>
+            </div>
+
+            <Form.Item label="Room Type" name="type_name" rules={[{ required: true }]}>
+              <Input placeholder="e.g. Deluxe King" className="h-10 rounded-lg" />
+            </Form.Item>
+
+            <Form.Item label="Price" name="price" rules={[{ required: true }]}>
+              <Input
+                placeholder="e.g. 25000"
+                onKeyDown={(e) => {
+                  if (
+                    !/[0-9.]/.test(e.key) &&
+                    !['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(
+                      e.key,
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                className="h-10 rounded-lg"
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <CustomButton
+                type="primary"
+                className="mt-5 w-full bg-orange-500"
+                buttonName="Add Room Type"
+                icon={<Plus size={20} />}
+                htmlType="submit"
+                loading={createRoomTypeLoading}
+              />
+            </Form.Item>
+
+            <div className="mt-8 rounded-2xl bg-blue-50 p-5">
+              <h4 className="mb-2 flex items-center gap-2 font-bold text-blue-800">
+                <Info size={16} /> Admin Note
+              </h4>
+              <p className="text-xs leading-relaxed text-blue-600">
+                Please note that when changing the price or type of a room, it does not
+                affect existing active reservations.
+              </p>
+            </div>
+          </Form>
+        }
+      />
     </div>
   );
 };

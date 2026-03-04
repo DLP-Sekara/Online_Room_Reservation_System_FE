@@ -1,4 +1,3 @@
-
 // 1. Dashboard Interfaces
 export interface Notification {
   id: string;
@@ -40,12 +39,10 @@ export interface AvailabilityCheck {
 
 // 3. Room Interfaces
 export interface Room {
-  id?: string;
-  roomNo: string;
-  roomType: string;
-  price: number;
-  status: 'Available' | 'Occupied' | 'Out of Order';
-  cleaningStatus: 'Ready' | 'Dirty' | 'Maintenance';
+  roomId?: string;
+  roomNumber: string;
+  typeId: string;
+  status: 'AVAILABLE' | 'OCCUPIED' | 'OUT_OF_ORDER' | 'CLEANING';
 }
 
 // 4. Meal & Food Interfaces
