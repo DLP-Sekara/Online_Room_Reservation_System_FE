@@ -47,19 +47,18 @@ export interface Room {
 
 // 4. Meal & Food Interfaces
 export interface MealPlan {
-  id?: string;
-  planName: string;
+  planId?: string;
+  name: string;
   planCode: string; // e.g., BB, HB, FB
-  pricePerPerson: number;
+  price: number;
   status: 'Active' | 'Inactive';
 }
 
 export interface FoodItem {
-  id?: string;
+  itemId?: string;
   name: string;
-  category: string;
-  price: number;
-  status: 'Available' | 'Unavailable';
+  unitPrice: number;
+  quantityOnHand: number;
 }
 
 // 5. Payment & Billing Interfaces

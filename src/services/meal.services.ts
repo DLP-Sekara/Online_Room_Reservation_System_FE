@@ -37,16 +37,16 @@ const mealService = () => {
       handleRequest({ url: `api/v1/meal-plans/delete/${id}`, method: 'delete' }),
 
     // Food Items
-    getAllFoodItems: () => handleRequest({ url: 'food-items/all', method: 'get' }),
+    getAllFoodItems: () => handleRequest({ url: 'api/v1/food-items/all', method: 'get' }),
 
     addFoodItem: (data: FoodItem) =>
-      handleRequest({ url: 'food-items/add', data, method: 'post' }),
+      handleRequest({ url: 'api/v1/food-items/add', data, method: 'post' }),
 
     updateFoodItem: (data: Partial<FoodItem>) =>
-      handleRequest({ url: `food-items/update`, data, method: 'put' }),
+      handleRequest({ url: `api/v1/food-items/update`, data, method: 'put' }),
 
     deleteFoodItem: (id: string) =>
-      handleRequest({ url: `food-items/delete/${id}`, method: 'delete' }),
+      handleRequest({ url: `api/v1/food-items/delete/${id}`, method: 'delete' }),
   };
 };
 
