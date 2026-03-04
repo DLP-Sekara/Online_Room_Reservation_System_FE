@@ -80,13 +80,10 @@ export interface IncomeReport {
 
 // 6. User & Session Interfaces
 export interface UserAccount {
-  id?: string;
-  fullName: string;
-  username: string;
-  email: string;
-  role: 'Admin' | 'Manager' | 'Receptionist';
-  status: 'Active' | 'Inactive';
-  password?: string;
+  guestId?: string;
+  name: string;
+  nic?: string;
+  phone?: string;
 }
 
 export interface UserSession {

@@ -20,13 +20,16 @@ const handleRequest = async ({
 
 const userService = () => {
   return {
-    getAllUsers: () => handleRequest({ url: 'api/v1/users', method: 'get' }),
+    getAllUsers: () => handleRequest({ url: 'api/v1/guests/all', method: 'get' }),
 
-    updateUser: (id: string, data: Partial<UserAccount>) =>
-      handleRequest({ url: `api/v1/users/${id}`, data, method: 'put' }),
+    updateUser: (data: Partial<UserAccount>) =>
+      handleRequest({ url: `api/v1/guests/update`, data, method: 'put' }),
 
     deleteUser: (id: string) =>
-      handleRequest({ url: `api/v1/users/${id}`, method: 'delete' }),
+      handleRequest({ url: `api/v1/guests/delete/${id}`, method: 'delete' }),
+
+    createUser: (data: UserAccount) =>
+      handleRequest({ url: 'api/v1/guests/add', data, method: 'post' }),
   };
 };
 
