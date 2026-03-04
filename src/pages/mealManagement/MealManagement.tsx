@@ -10,17 +10,7 @@ import {
   message,
   InputNumber,
 } from 'antd';
-import {
-  Search,
-  Plus,
-  Filter,
-  Edit,
-  Trash2,
-  Utensils,
-  Info,
-  Coffee,
-  PieChart,
-} from 'lucide-react';
+import { Plus, Edit, Trash2, Utensils, Info } from 'lucide-react';
 
 const MealManagement = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -138,34 +128,8 @@ const MealManagement = () => {
         </Button>
       </div>
 
-      {/* --- 2. Quick Insight Cards (New for Meal Page) --- */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="rounded-xl bg-blue-500 p-3 text-white">
-            <Coffee size={20} />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
-              Most Popular
-            </p>
-            <p className="text-lg font-bold text-blue-900">Half Board (HB)</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-orange-100 bg-orange-50 p-4">
-          <div className="rounded-xl bg-orange-500 p-3 text-white">
-            <PieChart size={20} />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-orange-600">
-              Avg. Meal Revenue
-            </p>
-            <p className="text-lg font-bold text-orange-900">LKR 4,200 / Guest</p>
-          </div>
-        </div>
-      </div>
-
-      {/* --- 3. Filter & Search Bar --- */}
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
+      {/* --- 2. Filter & Search Bar --- */}
+      {/* <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
         <Input
           prefix={<Search size={18} className="text-gray-400" />}
           placeholder="Search meal plan..."
@@ -177,9 +141,9 @@ const MealManagement = () => {
         >
           Advanced Filter
         </Button>
-      </div>
+      </div> */}
 
-      {/* --- 4. Main Data Table --- */}
+      {/* --- 3. Main Data Table --- */}
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
           dataSource={dataSource}
@@ -189,7 +153,7 @@ const MealManagement = () => {
         />
       </div>
 
-      {/* --- 5. Side Drawer (Add/Edit Meal Plan) --- */}
+      {/* --- 4. Side Drawer (Add/Edit Meal Plan) --- */}
       <Drawer
         title={
           <span className="text-xl font-bold">
