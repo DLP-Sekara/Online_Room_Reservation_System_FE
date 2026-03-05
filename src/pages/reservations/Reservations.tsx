@@ -17,6 +17,7 @@ import {
   Badge,
   Tooltip,
   Popconfirm,
+  Modal,
 } from 'antd';
 import {
   Plus,
@@ -52,6 +53,12 @@ const Reservations = () => {
   const [drawerType, setDrawerType] = useState('add');
   const [selectedResId, setSelectedResId] = useState<string | null>(null);
   const [stepOneForm] = Form.useForm();
+
+  // Quick Check State
+  const [isQuickCheckModalOpen, setIsQuickCheckModalOpen] = useState(false);
+  const [quickCheckDates, setQuickCheckDates] = useState<any>(null);
+  const [quickCheckRoomType, setQuickCheckRoomType] = useState<string | null>(null);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
 
   const [current, setCurrent] = useState(0); // Stepper index
   const [stepDetails, setStepDetails] = useState({});
@@ -92,12 +99,36 @@ const Reservations = () => {
     await checkOutGuest(id);
   };
 
+  const handleQuickCheck = async () => {
+    if (!quickCheckDates || !quickCheckRoomType) {
+      errorToast('Please select staying dates and room type');
+      return;
+    }
+
+    const data = {
+      typeId: quickCheckRoomType,
+      checkIn: quickCheckDates[0]?.format('YYYY-MM-DD'),
+      checkOut: quickCheckDates[1]?.format('YYYY-MM-DD'),
+    };
+
+    getAvailableRooms(data, {
+      onSuccess: (res) => {
+        if (res.success) {
+          setAvailableRooms(res.data);
+          setIsQuickCheckModalOpen(true);
+        } else {
+          errorToast(res.message || 'No rooms found for selected criteria');
+        }
+      },
+    });
+  };
+
   const checkAvailability = async () => {
     const values = stepOneForm.getFieldsValue();
     const data = {
-      roomType: values.roomType,
-      startDate: values.dates?.[0]?.format('YYYY-MM-DD'),
-      endDate: values.dates?.[1]?.format('YYYY-MM-DD'),
+      typeId: values.roomType,
+      checkIn: values.dates?.[0]?.format('YYYY-MM-DD'),
+      checkOut: values.dates?.[1]?.format('YYYY-MM-DD'),
     };
 
     getAvailableRooms(data, {
@@ -292,14 +323,18 @@ const Reservations = () => {
         </Button>
       </div>
 
-      {/* --- 2. Availability & Quick Check Section (NEW MODERN UI) --- */}
+      {/* --- 2. Availability & Quick Check Section --- */}
       <Card className="overflow-hidden rounded-[2rem] border-none bg-gradient-to-r from-blue-50/50 to-indigo-50/50 shadow-sm">
         <div className="flex flex-col gap-6 p-2 md:flex-row md:items-end">
           <div className="flex-1 space-y-2">
             <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600">
               <CalendarCheck size={16} /> Stay Duration
             </label>
-            <RangePicker className="h-12 w-full rounded-xl border-none shadow-sm" />
+            <RangePicker
+              className="h-12 w-full rounded-xl border-none shadow-sm"
+              value={quickCheckDates}
+              onChange={(dates) => setQuickCheckDates(dates)}
+            />
           </div>
 
           <div className="w-full space-y-2 md:w-64">
@@ -309,6 +344,8 @@ const Reservations = () => {
             <Select
               placeholder="Select Type"
               className="h-12 w-full rounded-xl border-none bg-white shadow-sm"
+              value={quickCheckRoomType}
+              onChange={(value) => setQuickCheckRoomType(value)}
             >
               {roomTypes?.data?.map((item: RoomType) => (
                 <Option key={item.typeId} value={item.typeId}>
@@ -321,30 +358,11 @@ const Reservations = () => {
           <Button
             type="primary"
             loading={isSearching}
-            onClick={checkAvailability}
+            onClick={handleQuickCheck}
             className="h-12 rounded-xl border-none bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100"
           >
             Check Availability
           </Button>
-
-          {/* Availability Status Badge */}
-          {/* {availabilityResult && (
-            <div className="animate-in zoom-in flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
-              {availabilityResult === 'available' ? (
-                <>
-                  <CheckCircle2 className="text-green-500" size={20} />
-                  <span className="text-sm font-bold text-green-700">
-                    Rooms Available
-                  </span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="text-red-500" size={20} />
-                  <span className="text-sm font-bold text-red-700">Fully Booked</span>
-                </>
-              )}
-            </div>
-          )} */}
         </div>
       </Card>
 
@@ -711,6 +729,99 @@ const Reservations = () => {
           </>
         )}
       </Drawer>
+
+      {/* --- 5. Quick Check Result Modal --- */}
+      <Modal
+        open={isQuickCheckModalOpen}
+        onCancel={() => setIsQuickCheckModalOpen(false)}
+        footer={null}
+        centered
+        width={500}
+        closeIcon={null}
+        className="availability-modal"
+      >
+        <div className="relative overflow-hidden p-0">
+          {availableRooms.length > 0 ? (
+            <div className="space-y-6">
+              <div className="relative h-32 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white">
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-blue-100">
+                      Great News!
+                    </p>
+                    <h3 className="text-2xl font-black">Rooms Available</h3>
+                  </div>
+                  <CheckCircle2 className="text-white/30" size={48} />
+                </div>
+                {/* Abstract Shapes */}
+                <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+              </div>
+
+              <div className="p-2">
+                <p className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Available Room Numbers
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {availableRooms.map((room: Room) => (
+                    <div
+                      key={room.roomId}
+                      className="flex h-12 w-20 items-center justify-center rounded-2xl border-2 border-blue-50 bg-blue-50/30 text-lg font-bold text-blue-700 transition-all hover:border-blue-200 hover:bg-white hover:shadow-md"
+                    >
+                      {room.roomNumber}
+                    </div>
+                  ))}
+                </div>
+
+                <Divider className="my-8" />
+
+                <div className="flex gap-4">
+                  <Button
+                    onClick={() => setIsQuickCheckModalOpen(false)}
+                    className="h-14 flex-1 rounded-2xl border-none bg-gray-100 font-bold text-gray-600 transition-all hover:bg-gray-200"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsQuickCheckModalOpen(false);
+                      setDrawerType('add');
+                      setIsDrawerOpen(true);
+                      // Pre-fill the booking form
+                      stepOneForm.setFieldsValue({
+                        dates: quickCheckDates,
+                        roomType: quickCheckRoomType,
+                      });
+                    }}
+                    className="h-14 flex-[2] rounded-2xl border-none bg-[#0F2942] font-bold shadow-xl shadow-blue-100 ring-4 ring-blue-500/10"
+                  >
+                    Book Now
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 p-8 text-center">
+              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-red-50 text-red-500">
+                <CalendarCheck size={40} className="opacity-80" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black text-gray-800">Fully Booked</h3>
+                <p className="text-gray-500">
+                  Sorry, we don't have any available rooms for the selected dates and room
+                  type.
+                </p>
+              </div>
+              <Button
+                onClick={() => setIsQuickCheckModalOpen(false)}
+                className="h-14 w-full rounded-2xl border-none bg-gray-100 font-bold text-gray-600"
+              >
+                Close
+              </Button>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

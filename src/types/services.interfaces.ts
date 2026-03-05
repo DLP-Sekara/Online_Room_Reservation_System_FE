@@ -43,10 +43,9 @@ export interface Reservation {
 }
 
 export interface AvailabilityCheck {
-  roomId?: string;
-  roomType?: string;
-  startDate: string;
-  endDate: string;
+  typeId?: string;
+  checkIn: string;
+  checkOut: string;
 }
 
 // 3. Room Interfaces
