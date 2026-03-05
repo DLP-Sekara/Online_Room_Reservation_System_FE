@@ -39,6 +39,7 @@ const Rooms = () => {
   } = roomMutation();
   const { data: rooms } = getAllRoomsMutation();
   const { data: roomTypes } = getAllRoomTypesMutation();
+  
   const { mutateAsync: createRoomType, isPending: createRoomTypeLoading } =
     createRoomTypeMutation();
   const { mutateAsync: deleteRoomType, isPending: deleteRoomTypeLoading } =

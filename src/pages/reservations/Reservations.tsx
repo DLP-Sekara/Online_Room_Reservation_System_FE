@@ -10,28 +10,73 @@ import {
   Select,
   Form,
   Divider,
-  message,
   Row,
   Col,
+  Card,
+  Steps,
+  Badge,
+  Tooltip,
 } from 'antd';
 import {
-  Search,
   Plus,
-  Filter,
   Eye,
-  Edit,
   Trash2,
-  Calculator,
-  UserCheck,
+  CalendarCheck,
+  BedDouble,
+  CheckCircle2,
+  UserPlus,
+  Receipt,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
+import mealMutation from '../../mutations/meal.mutation';
+import roomMutation from '../../mutations/room.mutation';
+import type { RoomType } from '../../types/rooms';
+import type { FoodItem, MealPlan, Room } from '../../types/services.interfaces';
+import { errorToast } from '../../components/common/Alert';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const Reservations = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [drawerType, setDrawerType] = useState('add'); // 'add', 'view', 'edit'
-  const [form] = Form.useForm();
+  const [drawerType, setDrawerType] = useState('add');
+  const [stepOneForm] = Form.useForm();
+
+  const [current, setCurrent] = useState(0); // Stepper index
+  const [stepDetails, setStepDetails] = useState({});
+
+  //------------------------------------------------ mutations -----------------------------------------------
+  const { getAllMealPlansMutation, getAllFoodItemsMutation } = mealMutation();
+  const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
+
+  const { data: mealPlans } = getAllMealPlansMutation();
+  const { data: foodItems } = getAllFoodItemsMutation();
+  const { data: rooms } = getAllRoomsMutation();
+  const { data: roomTypes } = getAllRoomTypesMutation();
+
+  // --- API Functions Simulation ---
+  const checkAvailability = async () => {
+    setCurrent(1);
+    setStepDetails({ ...stepDetails, ...stepOneForm.getFieldsValue() });
+  };
+
+  const handleGuestSearch = async (phone: string) => {
+    // 2. API Call: /api/v1/guests/search?phone=...
+    // දත්ත තිබේ නම් form.setFieldsValue() පාවිච්චි කරන්න
+  };
+
+  const submitReservation = async () => {
+    // 3. API Call: /api/v1/reservations/create
+    console.log('Final Data: ', stepOneForm.getFieldsValue());
+  };
+
+  // --- Stepper UI Components ---
+  const steps = [
+    { title: 'Availability', icon: <CalendarCheck size={18} /> },
+    { title: 'Guest Details', icon: <UserPlus size={18} /> },
+    { title: 'Confirm', icon: <Receipt size={18} /> },
+  ];
 
   interface Reservation {
     key: string;
@@ -119,14 +164,25 @@ const Reservations = () => {
               setIsDrawerOpen(true);
             }}
           />
-          <Button
-            type="text"
-            icon={<Edit size={18} className="text-gray-400 hover:text-orange-500" />}
-          />
+
           <Button
             type="text"
             icon={<Trash2 size={18} className="text-gray-400 hover:text-red-500" />}
           />
+
+          <Tooltip title="Complete Check-out">
+            <Button
+              type="text"
+              icon={
+                <CheckCircle2
+                  size={18}
+                  className="h-6 w-6 rounded-full bg-yellow-400 p-1 text-white"
+                />
+              }
+              // onClick={() => handleCheckOut(record.resId)}
+              // disabled={record.status === 'COMPLETED'}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -154,20 +210,61 @@ const Reservations = () => {
         </Button>
       </div>
 
-      {/* --- 2. Filter Bar --- */}
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
-        <Input
-          prefix={<Search size={18} className="text-gray-400" />}
-          placeholder="Search guest or ID..."
-          className="h-11 w-full rounded-xl border-none shadow-sm md:w-80"
-        />
-        <Button
-          icon={<Filter size={18} />}
-          className="h-11 rounded-xl border-none shadow-sm"
-        >
-          Filters
-        </Button>
-      </div>
+      {/* --- 2. Availability & Quick Check Section (NEW MODERN UI) --- */}
+      <Card className="overflow-hidden rounded-[2rem] border-none bg-gradient-to-r from-blue-50/50 to-indigo-50/50 shadow-sm">
+        <div className="flex flex-col gap-6 p-2 md:flex-row md:items-end">
+          <div className="flex-1 space-y-2">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600">
+              <CalendarCheck size={16} /> Stay Duration
+            </label>
+            <RangePicker className="h-12 w-full rounded-xl border-none shadow-sm" />
+          </div>
+
+          <div className="w-full space-y-2 md:w-64">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600">
+              <BedDouble size={16} /> Room Type
+            </label>
+            <Select
+              placeholder="Select Type"
+              className="h-12 w-full rounded-xl border-none bg-white shadow-sm"
+            >
+              {roomTypes?.data?.map((item: RoomType) => (
+                <Option key={item.typeId} value={item.typeId}>
+                  {item.typeName}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          <Button
+            type="primary"
+            // loading={isSearching}
+            onClick={checkAvailability}
+            className="h-12 rounded-xl border-none bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100"
+          >
+            Check Availability
+          </Button>
+
+          {/* Availability Status Badge */}
+          {/* {availabilityResult && (
+            <div className="animate-in zoom-in flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+              {availabilityResult === 'available' ? (
+                <>
+                  <CheckCircle2 className="text-green-500" size={20} />
+                  <span className="text-sm font-bold text-green-700">
+                    Rooms Available
+                  </span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="text-red-500" size={20} />
+                  <span className="text-sm font-bold text-red-700">Fully Booked</span>
+                </>
+              )}
+            </div>
+          )} */}
+        </div>
+      </Card>
 
       {/* --- 3. Main Data Table --- */}
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
@@ -181,129 +278,310 @@ const Reservations = () => {
 
       {/* --- 4. Side Drawer (Add/View/Edit) --- */}
       <Drawer
-        title={
-          <span className="text-xl font-bold">
-            {drawerType === 'add' ? 'Create New Booking' : 'Booking Details'}
-          </span>
-        }
-        placement="right"
-        width={550}
+        title={<span className="text-xl font-black">Book a Stay</span>}
+        width={600}
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
-        extra={
-          <Space>
-            <Button onClick={() => setIsDrawerOpen(false)}>Cancel</Button>
-            {drawerType !== 'view' && (
+        className="custom-scrollbar rounded-l-[2.5rem]"
+        footer={
+          <div className="flex justify-between p-4">
+            <Button
+              disabled={current === 0}
+              onClick={() => setCurrent(current - 1)}
+              icon={<ArrowLeft size={16} />}
+              className="flex items-center gap-2 rounded-xl"
+            >
+              Back
+            </Button>
+
+            {current < steps.length - 1 ? (
               <Button
                 type="primary"
-                className="rounded-lg border-none bg-blue-600"
-                onClick={() => message.success('Saved Successfully!')}
+                onClick={() => {
+                  if (current === 0) {
+                    stepOneForm.submit();
+                  } else {
+                    setCurrent(current + 1);
+                  }
+                }}
+                className="flex h-10 items-center gap-2 rounded-xl bg-blue-600"
               >
-                Confirm Booking
+                Next <ArrowRight size={16} />
+              </Button>
+            ) : (
+              <Button
+                type="primary"
+                onClick={submitReservation}
+                className="h-10 rounded-xl border-none bg-green-600 shadow-lg shadow-green-100"
+              >
+                Confirm & Complete Booking
               </Button>
             )}
-          </Space>
+          </div>
         }
-        className="rounded-l-[2rem]"
       >
-        <Form form={form} layout="vertical" className="space-y-4">
-          {/* Guest Check Section */}
-          <div className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <div className="flex items-center gap-3">
-              <UserCheck className="text-blue-600" size={24} />
-              <div>
-                <p className="text-xs font-bold uppercase text-blue-600">
-                  Returning Guest?
-                </p>
-                <p className="text-sm text-blue-900">
-                  Check availability via phone number
-                </p>
-              </div>
-            </div>
-            <Input.Search placeholder="Enter Phone" className="w-40" />
-          </div>
+        {/* 1. Progress Tracker */}
+        <div className="mb-10 px-4">
+          <Steps
+            current={current}
+            items={steps}
+            size="small"
+            className="custom-booking-steps"
+          />
+        </div>
 
-          <Divider
-            orientation="left"
-            className="text-xs font-normal uppercase text-gray-400"
-          >
-            Guest Information
-          </Divider>
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item label="Full Name" name="name">
-                <Input placeholder="Guest Name" className="rounded-lg" />
+        <Form
+          form={stepOneForm}
+          layout="vertical"
+          className="px-2 pb-20"
+          onFinish={checkAvailability}
+        >
+          {/* STEP 1: AVAILABILITY CHECK */}
+          {current === 0 && (
+            <div className="animate-in slide-in-from-right duration-500">
+              <Form.Item
+                label="Select Stay Dates"
+                name="dates"
+                rules={[{ required: true }]}
+              >
+                <RangePicker className="h-12 w-full shadow-sm" />
               </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Contact Number" name="contact">
-                <Input placeholder="07x xxxxxxx" className="rounded-lg" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Email (Optional)" name="email">
-                <Input placeholder="example@mail.com" className="rounded-lg" />
-              </Form.Item>
-            </Col>
-          </Row>
 
-          <Divider
-            orientation="left"
-            className="text-xs font-normal uppercase text-gray-400"
-          >
-            Stay Details
-          </Divider>
-          <Form.Item label="Check-in & Check-out Dates">
-            <RangePicker className="h-10 w-full rounded-lg" />
-          </Form.Item>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="Room Type"
+                    name="roomType"
+                    rules={[{ required: true }]}
+                  >
+                    <Select size="large" className="rounded-xl" placeholder="Select Type">
+                      {roomTypes?.data?.map((item: RoomType) => (
+                        <Option key={item.typeId} value={item.typeId}>
+                          {item.typeName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="Available Rooms"
+                    name="roomId"
+                    rules={[
+                      { required: true, message: 'Please select a specific room!' },
+                    ]}
+                  >
+                    <Select
+                      size="large"
+                      placeholder="Select Room No"
+                      disabled={!stepOneForm.getFieldValue('roomType')}
+                    >
+                      {rooms?.data?.map((room: Room) => (
+                        <Option key={room.roomId} value={room.roomId}>
+                          Room {room.roomNumber}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Room Type">
-                <Select placeholder="Select Type" className="rounded-lg">
-                  <Option value="deluxe">Deluxe King (LKR 25,000)</Option>
-                  <Option value="standard">Standard (LKR 15,000)</Option>
+              <Form.Item label="Meal Plan" name="mealPlan" rules={[{ required: true }]}>
+                <Select
+                  size="large"
+                  className="rounded-xl"
+                  placeholder="Select Meal Plan"
+                >
+                  {mealPlans?.data?.map((item: MealPlan) => (
+                    <Option key={item.planId} value={item.planId}>
+                      {item.name}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Meal Plan">
-                <Select placeholder="Select Plan">
-                  <Option value="bb">Bed & Breakfast</Option>
-                  <Option value="fb">Full Board</Option>
+              <Form.Item label="Food Items" name="foodItems">
+                <Select
+                  showSearch
+                  className="h-11 flex-1 rounded-xl"
+                  placeholder="Search & Add Food Item"
+                  optionFilterProp="children"
+                  value={null}
+                  onChange={(value) => {
+                    const selectedItem = foodItems?.data?.find(
+                      (item: { itemId: any }) => item.itemId === value,
+                    );
+                    if (selectedItem) {
+                      const currentFoods =
+                        stepOneForm.getFieldValue('selectedFoods') || [];
+
+                      if (
+                        !currentFoods.find((f: { itemId: any }) => f.itemId === value)
+                      ) {
+                        stepOneForm.setFieldsValue({
+                          selectedFoods: [
+                            ...currentFoods,
+                            { ...selectedItem, ordered_qty: 1 },
+                          ],
+                        });
+                      } else {
+                        errorToast('Item already added!');
+                      }
+                    }
+                  }}
+                >
+                  {foodItems?.data?.map((item: FoodItem) => (
+                    <Option key={item.itemId} value={item.itemId}>
+                      {item.name} -{' '}
+                      <span className="text-xs text-gray-400">LKR {item.unitPrice}</span>
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
-            </Col>
-          </Row>
 
-          {/* Billing Calculation Section */}
-          <div className="mt-6 rounded-[2rem] border border-dashed border-gray-200 bg-gray-50 p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h4 className="flex items-center gap-2 font-bold text-gray-700">
-                <Calculator size={18} /> Estimated Bill
-              </h4>
-              <Button type="link" className="font-bold text-orange-500">
-                Recalculate
-              </Button>
+              {/* Selected Food Items List Area */}
+              <Form.List name="selectedFoods">
+                {(fields, { remove }) => (
+                  <div className="custom-scrollbar max-h-60 space-y-3 overflow-y-auto pr-2">
+                    {fields.length === 0 && (
+                      <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
+                        <p className="text-xs text-gray-400">
+                          No additional food items selected
+                        </p>
+                      </div>
+                    )}
+
+                    {fields.map(({ key, name, ...restField }) => (
+                      <div
+                        key={key}
+                        className="animate-in zoom-in flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-200"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-gray-700">
+                            {stepOneForm.getFieldValue(['selectedFoods', name, 'name'])}
+                          </p>
+                          <p className="text-xs font-semibold text-blue-500">
+                            LKR{' '}
+                            {stepOneForm.getFieldValue([
+                              'selectedFoods',
+                              name,
+                              'unitPrice',
+                            ])}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          {/* Quantity adjustment */}
+                          <Form.Item {...restField} name={[name, 'ordered_qty']} noStyle>
+                            <Input
+                              type="number"
+                              min={1}
+                              className="h-9 w-20 rounded-lg border-gray-200 text-center"
+                              prefix={
+                                <span className="text-[10px] text-gray-400">Qty</span>
+                              }
+                            />
+                          </Form.Item>
+
+                          <Button
+                            type="text"
+                            danger
+                            icon={<Trash2 size={16} />}
+                            onClick={() => remove(name)}
+                            className="rounded-lg hover:bg-red-50"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Form.List>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>Room Charges (2 Nights)</span>
-                <span>LKR 50,000</span>
+          )}
+
+          {/* STEP 2: GUEST IDENTIFICATION */}
+          {current === 1 && (
+            <div className="animate-in slide-in-from-right duration-500">
+              <div className="mb-8 rounded-[2rem] border border-gray-200 bg-gray-50 p-6">
+                <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-gray-400">
+                  Identity Check
+                </p>
+                <Input.Search
+                  placeholder="Search by nic"
+                  size="large"
+                  enterButton="Find Guest"
+                  onSearch={handleGuestSearch}
+                  className="overflow-hidden shadow-sm"
+                />
               </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>Meal Plan (FB)</span>
-                <span>LKR 15,000</span>
-              </div>
-              <Divider className="my-2" />
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-gray-800">Total Amount</span>
-                <span className="text-2xl font-bold tracking-tight text-blue-600">
-                  LKR 65,000
-                </span>
+
+              <Form.Item label="Full Name" name="guestName" rules={[{ required: true }]}>
+                <Input placeholder="Enter guest full name" className="h-11 rounded-xl" />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item label="NIC " name="nic" rules={[{ required: true }]}>
+                    <Input className="h-11 rounded-xl" placeholder="Enter NIC " />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Contact No" name="phone" rules={[{ required: true }]}>
+                    <Input
+                      className="h-11 rounded-xl"
+                      placeholder="Enter Contact Number"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
+          )}
+
+          {/* STEP 3: BILLING & CONFIRMATION */}
+          {current === 2 && (
+            <div className="animate-in slide-in-from-right duration-500">
+              <Card className="mb-6 rounded-[2.5rem] border-none bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl">
+                <div className="p-2">
+                  <div className="mb-6 flex items-center justify-between">
+                    <Badge
+                      status="processing"
+                      color="green"
+                      text={
+                        <span className="text-xs font-bold text-white">
+                          AVAILABILITY CONFIRMED
+                        </span>
+                      }
+                    />
+                    <Receipt className="text-white/50" size={24} />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm text-blue-100">
+                      <span>2 Nights x Deluxe Room</span>
+                      <span>Rs. 50,000.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-blue-100">
+                      <span>Full Board Meal Plan</span>
+                      <span>Rs. 15,000.00</span>
+                    </div>
+                    <Divider className="my-2 border-blue-400/30" />
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white">Amount Due</span>
+                      <span className="text-3xl font-black tracking-tighter text-white">
+                        Rs. 65,000.00
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="flex gap-4 rounded-3xl border border-orange-100 bg-orange-50 p-6">
+                <CheckCircle2 className="shrink-0 text-orange-500" size={24} />
+                <p className="text-xs leading-relaxed text-orange-800">
+                  By clicking "Confirm", the room status will be changed to{' '}
+                  <b>Occupied</b> and a reservation ID will be generated.
+                </p>
               </div>
             </div>
-          </div>
+          )}
         </Form>
       </Drawer>
     </div>
