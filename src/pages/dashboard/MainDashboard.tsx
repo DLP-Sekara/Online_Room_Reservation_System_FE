@@ -7,6 +7,7 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const MainDashboard = () => {
   const stats = [
@@ -33,19 +34,13 @@ const MainDashboard = () => {
     },
   ];
 
+  const navigate = useNavigate();
+
   const rooms = Array(10).fill({
     no: '101',
     type: 'Deluxe King',
     status: 'Occupied', // Occupied, Cleaning, Available
   });
-
-  const activities = [
-    { text: 'Guest John Doe checked into Room 105', time: '2 mins ago' },
-    { text: 'Reservation #2024-03-10 confirmed', time: '15 mins ago' },
-    { text: "Room 202 marked as 'Cleaning'", time: '1 hour ago' },
-    { text: 'New booking added for April 12th', time: '2 hours ago' },
-    { text: 'Payment received for Res #5542', time: '5 hours ago' },
-  ];
 
   return (
     <div className="animate-in fade-in space-y-8 duration-500">
@@ -82,6 +77,7 @@ const MainDashboard = () => {
           <Button
             type="text"
             className="flex items-center gap-1 text-blue-500 hover:text-orange-500"
+            onClick={() => navigate('/dashboard/rooms')}
           >
             Show More <ChevronRight size={16} />
           </Button>
@@ -107,35 +103,6 @@ const MainDashboard = () => {
             </Col>
           ))}
         </Row>
-      </div>
-
-      {/* 3. Recent Activity Section */}
-      <div className="rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm">
-        <h3 className="mb-6 text-xl font-bold text-[#0F2942]">Recent Activity</h3>
-        <div className="space-y-6">
-          {activities.map((act, i) => (
-            <div
-              key={i}
-              className="group flex cursor-pointer items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-500 transition-colors group-hover:bg-orange-50 group-hover:text-orange-500">
-                  <CheckCircle2 size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{act.text}</p>
-                  <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                    <Clock size={12} /> {act.time}
-                  </span>
-                </div>
-              </div>
-              <ChevronRight
-                size={16}
-                className="text-gray-300 group-hover:text-blue-500"
-              />
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

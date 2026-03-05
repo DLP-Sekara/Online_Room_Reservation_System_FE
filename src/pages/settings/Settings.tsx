@@ -55,11 +55,7 @@ const Settings = () => {
                   key: 'role',
                   render: (r) => <Tag color="purple">{r}</Tag>,
                 },
-                {
-                  title: '',
-                  key: 'action',
-                  render: () => <Button type="text" danger icon={<Trash2 size={16} />} />,
-                },
+               
               ]}
             />
           </Card>
