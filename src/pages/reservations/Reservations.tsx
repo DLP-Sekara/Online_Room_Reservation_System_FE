@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   Tag,
@@ -63,6 +63,7 @@ const Reservations = () => {
   // Booking Drawer State
   const [drawerAvailableRooms, setDrawerAvailableRooms] = useState<Room[]>([]);
   const [isAvailabilityChecked, setIsAvailabilityChecked] = useState(false);
+  const [searchNic, setSearchNic] = useState('');
 
   const [current, setCurrent] = useState(0); // Stepper index
   const [stepDetails, setStepDetails] = useState({});
@@ -79,7 +80,7 @@ const Reservations = () => {
     checkOutGuestMutation,
   } = reservationMutation();
 
-  const { getAllUsersMutation } = userMutation();
+  const { getAllUsersMutation, getUserByNicMutation } = userMutation();
 
   const { data: usersData } = getAllUsersMutation();
   const { data: mealPlans } = getAllMealPlansMutation();
@@ -97,6 +98,8 @@ const Reservations = () => {
     deleteReservationMutation();
   const { mutateAsync: checkOutGuest, isPending: isCheckingOut } =
     checkOutGuestMutation();
+  const { mutateAsync: refetchGuest, isPending: isSearchingGuest } =
+    getUserByNicMutation();
 
   // --- API Functions Simulation ---
   const handleCheckOut = async (id: string) => {
@@ -165,18 +168,21 @@ const Reservations = () => {
   };
 
   const handleGuestSearch = async (nic: string) => {
-    const existingGuest = usersData?.data?.find((u: any) => u.nic === nic);
-    if (existingGuest) {
+    if (!nic) {
+      errorToast('Please enter NIC to search');
+      return;
+    }
+    const res = await refetchGuest(nic);
+    if (res.success) {
       stepOneForm.setFieldsValue({
-        guestId: existingGuest.guestId,
-        guestName: existingGuest.name,
-        nic: existingGuest.nic,
-        phone: existingGuest.phone,
+        guestId: res.data.guestId,
+        guestName: res.data.name,
+        nic: res.data.nic,
+        phone: res.data.phone,
       });
       successToast('Guest found and details populated!');
-    } else {
-      errorToast('Guest not found. Please enter details manually.');
     }
+    setSearchNic(nic);
   };
 
   const submitReservation = async () => {
@@ -194,16 +200,17 @@ const Reservations = () => {
           orderedQty: f.ordered_qty,
         })) || [],
     };
-
-    createReservation(data as any, {
-      onSuccess: (res) => {
-        if (res.success) {
-          setIsDrawerOpen(false);
-          stepOneForm.resetFields();
-          setCurrent(0);
-        }
-      },
-    });
+    console.log(data);
+    console.log(stepDetails);
+    // createReservation(data as any, {
+    //   onSuccess: (res) => {
+    //     if (res.success) {
+    //       setIsDrawerOpen(false);
+    //       stepOneForm.resetFields();
+    //       setCurrent(0);
+    //     }
+    //   },
+    // });
   };
 
   // --- Stepper UI Components ---
@@ -430,15 +437,15 @@ const Reservations = () => {
                 <Button
                   type="primary"
                   onClick={() => {
-                    if (current === 0) {
-                      if (!isAvailabilityChecked) {
-                        errorToast('Please check room availability first!');
-                        return;
-                      }
-                      stepOneForm.submit();
-                    } else {
-                      setCurrent(current + 1);
+                    if (!isAvailabilityChecked) {
+                      errorToast('Please check room availability first!');
+                      return;
                     }
+                    stepOneForm.submit();
+                    // if (current === 0) {
+                    // } else {
+                    //   setCurrent(current + 1);
+                    // }
                   }}
                   className="flex h-10 items-center gap-2 rounded-xl bg-blue-600"
                 >
@@ -448,6 +455,7 @@ const Reservations = () => {
                 <Button
                   type="primary"
                   onClick={submitReservation}
+                  loading={createReservationLoading}
                   className="h-10 rounded-xl border-none bg-green-600 shadow-lg shadow-green-100"
                 >
                   Confirm & Complete Booking
@@ -701,6 +709,7 @@ const Reservations = () => {
                       placeholder="Search by nic"
                       size="large"
                       enterButton="Find Guest"
+                      loading={isSearchingGuest}
                       onSearch={handleGuestSearch}
                       className="overflow-hidden shadow-sm"
                     />
@@ -754,7 +763,13 @@ const Reservations = () => {
                             </span>
                           }
                         />
-                        <Receipt className="text-white/50" size={24} />
+                        <Receipt
+                          onClick={() => {
+                            console.log(stepDetails);
+                          }}
+                          className="text-white/50"
+                          size={24}
+                        />
                       </div>
                       <div className="space-y-3">
                         <div className="flex justify-between text-sm text-blue-100">

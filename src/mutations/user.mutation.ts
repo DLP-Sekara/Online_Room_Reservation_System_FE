@@ -6,7 +6,7 @@ import userService from '../services/user.services';
 
 const userMutation = () => {
   const queryClient = useQueryClient();
-  const { getAllUsers, updateUser, deleteUser, createUser } = userService();
+  const { getAllUsers, updateUser, deleteUser, createUser, getUserByNic } = userService();
 
   const createUserMutation = () => {
     return useMutation({
@@ -67,11 +67,26 @@ const userMutation = () => {
     });
   };
 
+  const getUserByNicMutation = () => {
+    return useMutation({
+      mutationFn: (nic: string) => getUserByNic(nic),
+      onSuccess: (response: APIResponse) => {
+        if (!response.success) {
+          errorToast(response.message);
+        }
+      },
+      onError: (error: APIResponse) => {
+        errorToast(error.message || 'Failed to get user');
+      },
+    });
+  };
+
   return {
     createUserMutation,
     updateUserMutation,
     deleteUserMutation,
     getAllUsersMutation,
+    getUserByNicMutation,
   };
 };
 

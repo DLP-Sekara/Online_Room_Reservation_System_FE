@@ -89,7 +89,7 @@ const roomMutation = () => {
     return useQuery({
       queryKey: ['room-types'],
       queryFn: () => getAllRoomTypesService(),
-      staleTime: 1000 * 60 * 60,
+      // staleTime: 1000 * 60 * 60,
     });
   };
 
@@ -114,7 +114,7 @@ const roomMutation = () => {
     return useQuery({
       queryKey: ['rooms'],
       queryFn: () => getAllRooms(),
-      staleTime: 1000 * 60 * 60,
+      // staleTime: 1000 * 60 * 60,
     });
   };
 

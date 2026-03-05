@@ -28,6 +28,9 @@ const userService = () => {
     deleteUser: (id: string) =>
       handleRequest({ url: `api/v1/guests/delete/${id}`, method: 'delete' }),
 
+    getUserByNic: (nic: string) =>
+      handleRequest({ url: `api/v1/guests/find-by-nic/${nic}`, method: 'get' }),
+
     createUser: (data: UserAccount) =>
       handleRequest({ url: 'api/v1/guests/add', data, method: 'post' }),
   };
