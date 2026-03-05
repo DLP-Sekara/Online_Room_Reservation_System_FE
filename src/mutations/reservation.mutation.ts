@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { errorToast, successToast } from '../components/common/Alert';
 import type { APIResponse } from '../types/onBoarding.interfaces';
 import type { Reservation, AvailabilityCheck } from '../types/services.interfaces';
@@ -7,12 +7,28 @@ import reservationService from '../services/reservation.services';
 const reservationMutation = () => {
   const queryClient = useQueryClient();
   const {
+    getAllReservations,
+    getReservationById,
     createReservation,
-    updateReservation,
     deleteReservation,
-    checkRoomAvailability,
-    calculateBillAndComplete,
+    getAvailableRooms,
+    checkOutGuest,
   } = reservationService();
+
+  const getAllReservationsQuery = () => {
+    return useQuery({
+      queryKey: ['reservations'],
+      queryFn: () => getAllReservations(),
+    });
+  };
+
+  const getReservationByIdQuery = (id: string) => {
+    return useQuery({
+      queryKey: ['reservation', id],
+      queryFn: () => getReservationById(id),
+      enabled: !!id,
+    });
+  };
 
   const createReservationMutation = () => {
     return useMutation({
@@ -27,24 +43,6 @@ const reservationMutation = () => {
       },
       onError: (error: APIResponse) => {
         errorToast(error.message || 'Failed to create reservation');
-      },
-    });
-  };
-
-  const updateReservationMutation = () => {
-    return useMutation({
-      mutationFn: ({ id, data }: { id: string; data: Partial<Reservation> }) =>
-        updateReservation(id, data),
-      onSuccess: (response: APIResponse) => {
-        if (response.success) {
-          successToast(response.message);
-          queryClient.invalidateQueries({ queryKey: ['reservations'] });
-        } else {
-          errorToast(response.message);
-        }
-      },
-      onError: (error: APIResponse) => {
-        errorToast(error.message || 'Failed to update reservation');
       },
     });
   };
@@ -66,9 +64,9 @@ const reservationMutation = () => {
     });
   };
 
-  const checkRoomAvailabilityMutation = () => {
+  const getAvailableRoomsMutation = () => {
     return useMutation({
-      mutationFn: (data: AvailabilityCheck) => checkRoomAvailability(data),
+      mutationFn: (data: AvailabilityCheck) => getAvailableRooms(data),
       onSuccess: (response: APIResponse) => {
         if (!response.success) {
           errorToast(response.message);
@@ -80,9 +78,9 @@ const reservationMutation = () => {
     });
   };
 
-  const calculateBillAndCompleteMutation = () => {
+  const checkOutGuestMutation = () => {
     return useMutation({
-      mutationFn: (id: string) => calculateBillAndComplete(id),
+      mutationFn: (id: string) => checkOutGuest(id),
       onSuccess: (response: APIResponse) => {
         if (response.success) {
           successToast(response.message);
@@ -92,17 +90,18 @@ const reservationMutation = () => {
         }
       },
       onError: (error: APIResponse) => {
-        errorToast(error.message || 'Failed to complete billing');
+        errorToast(error.message || 'Failed to complete checkout');
       },
     });
   };
 
   return {
+    getAllReservationsQuery,
+    getReservationByIdQuery,
     createReservationMutation,
-    updateReservationMutation,
     deleteReservationMutation,
-    checkRoomAvailabilityMutation,
-    calculateBillAndCompleteMutation,
+    getAvailableRoomsMutation,
+    checkOutGuestMutation,
   };
 };
 

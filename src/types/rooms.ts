@@ -5,4 +5,5 @@ export interface RoomType {
   id?: string;
   typeName: string;
   pricePerNight: number;
+  maxOccupancy: number;
 }

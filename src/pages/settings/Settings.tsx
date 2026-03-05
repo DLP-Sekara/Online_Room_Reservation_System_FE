@@ -1,66 +1,8 @@
 import { Form, Input, Button, Tabs, Table, Tag, Divider, message, Card } from 'antd';
-import {
-  ShieldCheck,
-  KeyRound,
-  MonitorDot,
-  UserPlus,
-  Trash2,
-  LogOut,
-} from 'lucide-react';
+import { KeyRound, UserPlus, Trash2 } from 'lucide-react';
 
 const Settings = () => {
   const [passwordForm] = Form.useForm();
-
-  // 1. Sample Data for Active Sessions
-  const sessionData = [
-    {
-      key: '1',
-      device: 'Chrome / Windows',
-      location: 'Colombo, SL',
-      date: 'Active Now',
-      ip: '192.168.1.1',
-    },
-    {
-      key: '2',
-      device: 'Safari / iPhone 13',
-      location: 'Galle, SL',
-      date: '2 hours ago',
-      ip: '112.134.5.10',
-    },
-  ];
-
-  const sessionColumns = [
-    {
-      title: 'Device & OS',
-      dataIndex: 'device',
-      key: 'device',
-      render: (text: string) => (
-        <div className="flex items-center gap-3">
-          <MonitorDot size={18} className="text-blue-500" />
-          <span className="font-medium">{text}</span>
-        </div>
-      ),
-    },
-    { title: 'Location', dataIndex: 'location', key: 'location' },
-    { title: 'IP Address', dataIndex: 'ip', key: 'ip' },
-    {
-      title: 'Last Activity',
-      dataIndex: 'date',
-      key: 'date',
-      render: (text: string) => (
-        <Tag color={text === 'Active Now' ? 'green' : 'default'}>{text}</Tag>
-      ),
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: () => (
-        <Button type="text" danger icon={<LogOut size={16} />}>
-          Logout
-        </Button>
-      ),
-    },
-  ];
 
   const tabItems = [
     {
@@ -169,36 +111,6 @@ const Settings = () => {
               Update Password
             </Button>
           </Form>
-        </div>
-      ),
-    },
-    {
-      key: '3',
-      label: (
-        <span className="flex items-center gap-2">
-          <MonitorDot size={16} /> Current Sessions
-        </span>
-      ),
-      children: (
-        <div className="animate-in fade-in space-y-6 duration-500">
-          <div className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="text-blue-600" size={24} />
-              <p className="text-sm font-medium text-blue-900">
-                If you see any suspicious activity, logout from all other devices
-                immediately.
-              </p>
-            </div>
-            <Button danger className="rounded-xl font-bold">
-              Logout All Devices
-            </Button>
-          </div>
-          <Table
-            dataSource={sessionData}
-            columns={sessionColumns}
-            pagination={false}
-            className="overflow-hidden rounded-2xl border border-gray-100"
-          />
         </div>
       ),
     },

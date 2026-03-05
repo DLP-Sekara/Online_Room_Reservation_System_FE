@@ -16,18 +16,30 @@ export interface DashboardDetails {
 
 // 2. Reservation Interfaces
 export interface Reservation {
+  reservationDetails: any;
+  planId: any;
+  typeId: any;
+  resId: any;
+  roomId: any;
   id?: string;
   guestId?: string;
   guestName: string;
-  roomNo: string;
-  roomType: string;
-  mealPlanId: string;
+  roomNo?: string;
+  roomType?: string;
+  mealPlanId?: string;
   checkIn: string;
   checkOut: string;
   contactNo: string;
   email?: string;
-  status: 'Pending' | 'Confirmed' | 'Cancelled' | 'CheckedIn' | 'CheckedOut';
+  status:
+    | 'PENDING'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'CONFIRMED'
+    | 'CHECKED_IN'
+    | 'CHECKED_OUT';
   totalAmount: number;
+  totalBill?: number;
 }
 
 export interface AvailabilityCheck {
@@ -98,5 +110,5 @@ export interface UserSession {
 export interface ServiceRequestArgs {
   url: string;
   data?: any;
-  method?: 'get' | 'post' | 'put' | 'delete';
+  method?: 'get' | 'post' | 'put' | 'delete' | 'patch';
 }

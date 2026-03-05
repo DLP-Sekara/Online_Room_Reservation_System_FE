@@ -141,6 +141,7 @@ const Rooms = () => {
     const data = {
       typeName: values.type_name,
       pricePerNight: values.price,
+      maxOccupancy: values.maxOccupancy,
     };
     await createRoomType(data);
     setRoomTypeModalOpen(false);
@@ -152,7 +153,7 @@ const Rooms = () => {
       roomNumber: values.roomNo,
       typeId: values.type,
       status: values.status,
-    };
+    }; 
     const response = await createRoom(data);
     if (response.success) {
       setIsDrawerOpen(false);
@@ -420,6 +421,23 @@ const Rooms = () => {
                 onKeyDown={(e) => {
                   if (
                     !/[0-9.]/.test(e.key) &&
+                    !['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(
+                      e.key,
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                className="h-10 rounded-lg"
+              />
+            </Form.Item>
+
+            <Form.Item label="Max Occupancy" name="maxOccupancy" rules={[{ required: true }]}>
+              <Input
+                placeholder="e.g. 2"
+                onKeyDown={(e) => {
+                  if (
+                    !/[0-9]/.test(e.key) &&
                     !['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(
                       e.key,
                     )
