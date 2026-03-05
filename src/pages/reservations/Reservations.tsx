@@ -60,6 +60,10 @@ const Reservations = () => {
   const [quickCheckRoomType, setQuickCheckRoomType] = useState<string | null>(null);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
 
+  // Booking Drawer State
+  const [drawerAvailableRooms, setDrawerAvailableRooms] = useState<Room[]>([]);
+  const [isAvailabilityChecked, setIsAvailabilityChecked] = useState(false);
+
   const [current, setCurrent] = useState(0); // Stepper index
   const [stepDetails, setStepDetails] = useState({});
 
@@ -125,6 +129,11 @@ const Reservations = () => {
 
   const checkAvailability = async () => {
     const values = stepOneForm.getFieldsValue();
+    if (!values.dates || !values.roomType) {
+      errorToast('Please select dates and room type');
+      return;
+    }
+
     const data = {
       typeId: values.roomType,
       checkIn: values.dates?.[0]?.format('YYYY-MM-DD'),
@@ -134,11 +143,25 @@ const Reservations = () => {
     getAvailableRooms(data, {
       onSuccess: (res) => {
         if (res.success) {
-          setCurrent(1);
-          setStepDetails({ ...stepDetails, ...values });
+          if (res.data?.length > 0) {
+            setDrawerAvailableRooms(res.data);
+            setIsAvailabilityChecked(true);
+            successToast('Rooms are available! Please select a room to continue.');
+          } else {
+            errorToast('No Available Rooms');
+            setIsAvailabilityChecked(false);
+          }
+        } else {
+          errorToast(res.message || 'No rooms found for selected criteria');
+          setIsAvailabilityChecked(false);
         }
       },
     });
+  };
+
+  const handleNextStep = async (values: any) => {
+    setStepDetails({ ...stepDetails, ...values });
+    setCurrent(current + 1);
   };
 
   const handleGuestSearch = async (nic: string) => {
@@ -377,7 +400,7 @@ const Reservations = () => {
         />
       </div>
 
-      {/* --- 4. Side Drawer (Add/View/Edit) --- */}
+      {/* --- 4. Side Drawer to create new reservation --- */}
       <Drawer
         title={
           <span className="text-xl font-black">
@@ -408,6 +431,10 @@ const Reservations = () => {
                   type="primary"
                   onClick={() => {
                     if (current === 0) {
+                      if (!isAvailabilityChecked) {
+                        errorToast('Please check room availability first!');
+                        return;
+                      }
                       stepOneForm.submit();
                     } else {
                       setCurrent(current + 1);
@@ -448,17 +475,20 @@ const Reservations = () => {
               form={stepOneForm}
               layout="vertical"
               className="px-2 pb-20"
-              onFinish={checkAvailability}
+              onFinish={handleNextStep}
             >
               {/* STEP 1: AVAILABILITY CHECK */}
               {current === 0 && (
-                <div className="animate-in slide-in-from-right duration-500">
+                <div className="animate-in slide-in-from-right space-y-4 duration-500">
                   <Form.Item
                     label="Select Stay Dates"
                     name="dates"
                     rules={[{ required: true }]}
                   >
-                    <RangePicker className="h-12 w-full shadow-sm" />
+                    <RangePicker
+                      className="h-12 w-full shadow-sm"
+                      onChange={() => setIsAvailabilityChecked(false)}
+                    />
                   </Form.Item>
 
                   <Row gutter={16}>
@@ -472,6 +502,7 @@ const Reservations = () => {
                           size="large"
                           className="rounded-xl"
                           placeholder="Select Type"
+                          onChange={() => setIsAvailabilityChecked(false)}
                         >
                           {roomTypes?.data?.map((item: RoomType) => (
                             <Option key={item.typeId} value={item.typeId}>
@@ -483,150 +514,179 @@ const Reservations = () => {
                     </Col>
                     <Col span={12}>
                       <Form.Item
+                        label="Guest Count"
+                        name="guestCount"
+                        rules={[{ required: true }]}
+                      >
+                        <Input
+                          type="number"
+                          size="large"
+                          placeholder="Enter count"
+                          className="rounded-xl"
+                          min={1}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <Button
+                    type="default"
+                    className="h-12 w-full rounded-2xl border-2 border-blue-100 bg-blue-50/50 font-bold text-blue-600 transition-all hover:bg-blue-100"
+                    loading={isSearching}
+                    onClick={checkAvailability}
+                  >
+                    Check Room Availability
+                  </Button>
+
+                  {isAvailabilityChecked && (
+                    <div className="animate-in zoom-in space-y-4 pt-4 duration-500">
+                      <Divider className="my-2" />
+                      <Form.Item
                         label="Available Rooms"
                         name="roomId"
                         rules={[
                           { required: true, message: 'Please select a specific room!' },
                         ]}
                       >
-                        <Select
-                          size="large"
-                          placeholder="Select Room No"
-                          disabled={!stepOneForm.getFieldValue('roomType')}
-                        >
-                          {rooms?.data?.map((room: Room) => (
+                        <Select size="large" placeholder="Select Room No">
+                          {drawerAvailableRooms.map((room: Room) => (
                             <Option key={room.roomId} value={room.roomId}>
                               Room {room.roomNumber}
                             </Option>
                           ))}
                         </Select>
                       </Form.Item>
-                    </Col>
-                  </Row>
 
-                  <Form.Item
-                    label="Meal Plan"
-                    name="mealPlan"
-                    rules={[{ required: true }]}
-                  >
-                    <Select
-                      size="large"
-                      className="rounded-xl"
-                      placeholder="Select Meal Plan"
-                    >
-                      {mealPlans?.data?.map((item: MealPlan) => (
-                        <Option key={item.planId} value={item.planId}>
-                          {item.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                  <Form.Item label="Food Items" name="foodItems">
-                    <Select
-                      showSearch
-                      className="h-11 flex-1 rounded-xl"
-                      placeholder="Search & Add Food Item"
-                      optionFilterProp="children"
-                      value={null}
-                      onChange={(value) => {
-                        const selectedItem = foodItems?.data?.find(
-                          (item: { itemId: any }) => item.itemId === value,
-                        );
-                        if (selectedItem) {
-                          const currentFoods =
-                            stepOneForm.getFieldValue('selectedFoods') || [];
+                      <Form.Item
+                        label="Meal Plan"
+                        name="mealPlan"
+                        rules={[{ required: true }]}
+                      >
+                        <Select
+                          size="large"
+                          className="rounded-xl"
+                          placeholder="Select Meal Plan"
+                        >
+                          {mealPlans?.data?.map((item: MealPlan) => (
+                            <Option key={item.planId} value={item.planId}>
+                              {item.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
 
-                          if (
-                            !currentFoods.find((f: { itemId: any }) => f.itemId === value)
-                          ) {
-                            stepOneForm.setFieldsValue({
-                              selectedFoods: [
-                                ...currentFoods,
-                                { ...selectedItem, ordered_qty: 1 },
-                              ],
-                            });
-                          } else {
-                            errorToast('Item already added!');
-                          }
-                        }
-                      }}
-                    >
-                      {foodItems?.data?.map((item: FoodItem) => (
-                        <Option key={item.itemId} value={item.itemId}>
-                          {item.name} -{' '}
-                          <span className="text-xs text-gray-400">
-                            LKR {item.unitPrice}
-                          </span>
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
+                      <Form.Item label="Food Items" name="foodItems">
+                        <Select
+                          showSearch
+                          className="h-11 flex-1 rounded-xl"
+                          placeholder="Search & Add Food Item"
+                          optionFilterProp="children"
+                          value={null}
+                          onChange={(value) => {
+                            const selectedItem = foodItems?.data?.find(
+                              (item: { itemId: any }) => item.itemId === value,
+                            );
+                            if (selectedItem) {
+                              const currentFoods =
+                                stepOneForm.getFieldValue('selectedFoods') || [];
 
-                  {/* Selected Food Items List Area */}
-                  <Form.List name="selectedFoods">
-                    {(fields, { remove }) => (
-                      <div className="custom-scrollbar max-h-60 space-y-3 overflow-y-auto pr-2">
-                        {fields.length === 0 && (
-                          <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
-                            <p className="text-xs text-gray-400">
-                              No additional food items selected
-                            </p>
+                              if (
+                                !currentFoods.find(
+                                  (f: { itemId: any }) => f.itemId === value,
+                                )
+                              ) {
+                                stepOneForm.setFieldsValue({
+                                  selectedFoods: [
+                                    ...currentFoods,
+                                    { ...selectedItem, ordered_qty: 1 },
+                                  ],
+                                });
+                              } else {
+                                errorToast('Item already added!');
+                              }
+                            }
+                          }}
+                        >
+                          {foodItems?.data?.map((item: FoodItem) => (
+                            <Option key={item.itemId} value={item.itemId}>
+                              {item.name} -{' '}
+                              <span className="text-xs text-gray-400">
+                                LKR {item.unitPrice}
+                              </span>
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+
+                      {/* Selected Food Items List Area */}
+                      <Form.List name="selectedFoods">
+                        {(fields, { remove }) => (
+                          <div className="custom-scrollbar max-h-60 space-y-3 overflow-y-auto pr-2">
+                            {fields.length === 0 && (
+                              <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
+                                <p className="text-xs text-gray-400">
+                                  No additional food items selected
+                                </p>
+                              </div>
+                            )}
+
+                            {fields.map(({ key, name, ...restField }) => (
+                              <div
+                                key={key}
+                                className="animate-in zoom-in flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-200"
+                              >
+                                <div className="flex-1">
+                                  <p className="text-sm font-bold text-gray-700">
+                                    {stepOneForm.getFieldValue([
+                                      'selectedFoods',
+                                      name,
+                                      'name',
+                                    ])}
+                                  </p>
+                                  <p className="text-xs font-semibold text-blue-500">
+                                    LKR{' '}
+                                    {stepOneForm.getFieldValue([
+                                      'selectedFoods',
+                                      name,
+                                      'unitPrice',
+                                    ])}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                  {/* Quantity adjustment */}
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'ordered_qty']}
+                                    noStyle
+                                  >
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      className="h-9 w-20 rounded-lg border-gray-200 text-center"
+                                      prefix={
+                                        <span className="text-[10px] text-gray-400">
+                                          Qty
+                                        </span>
+                                      }
+                                    />
+                                  </Form.Item>
+
+                                  <Button
+                                    type="text"
+                                    danger
+                                    icon={<Trash2 size={16} />}
+                                    onClick={() => remove(name)}
+                                    className="rounded-lg hover:bg-red-50"
+                                  />
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
-
-                        {fields.map(({ key, name, ...restField }) => (
-                          <div
-                            key={key}
-                            className="animate-in zoom-in flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-200"
-                          >
-                            <div className="flex-1">
-                              <p className="text-sm font-bold text-gray-700">
-                                {stepOneForm.getFieldValue([
-                                  'selectedFoods',
-                                  name,
-                                  'name',
-                                ])}
-                              </p>
-                              <p className="text-xs font-semibold text-blue-500">
-                                LKR{' '}
-                                {stepOneForm.getFieldValue([
-                                  'selectedFoods',
-                                  name,
-                                  'unitPrice',
-                                ])}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                              {/* Quantity adjustment */}
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'ordered_qty']}
-                                noStyle
-                              >
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  className="h-9 w-20 rounded-lg border-gray-200 text-center"
-                                  prefix={
-                                    <span className="text-[10px] text-gray-400">Qty</span>
-                                  }
-                                />
-                              </Form.Item>
-
-                              <Button
-                                type="text"
-                                danger
-                                icon={<Trash2 size={16} />}
-                                onClick={() => remove(name)}
-                                className="rounded-lg hover:bg-red-50"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </Form.List>
+                      </Form.List>
+                    </div>
+                  )}
                 </div>
               )}
 
