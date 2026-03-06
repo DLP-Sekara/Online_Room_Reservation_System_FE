@@ -70,14 +70,6 @@ const userMutation = () => {
   const getUserByNicMutation = () => {
     return useMutation({
       mutationFn: (nic: string) => getUserByNic(nic),
-      onSuccess: (response: APIResponse) => {
-        if (!response.success) {
-          errorToast(response.message);
-        }
-      },
-      onError: (error: APIResponse) => {
-        errorToast(error.message || 'Failed to get user');
-      },
     });
   };
 

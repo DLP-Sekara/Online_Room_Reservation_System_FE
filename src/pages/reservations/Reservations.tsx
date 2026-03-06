@@ -73,7 +73,7 @@ const Reservations = () => {
   const [isAvailabilityChecked, setIsAvailabilityChecked] = useState(false);
 
   const [current, setCurrent] = useState(0); // Stepper index
-  const [stepDetails, setStepDetails] = useState({});
+  const [stepDetails, setStepDetails] = useState<any>({});
 
   //------------------------------------------------ mutations -----------------------------------------------
   const { getAllMealPlansMutation, getAllFoodItemsMutation } = mealMutation();
@@ -86,7 +86,8 @@ const Reservations = () => {
     checkOutGuestMutation,
   } = reservationMutation();
 
-  const { getAllUsersMutation, getUserByNicMutation } = userMutation();
+  const { getAllUsersMutation, getUserByNicMutation, createUserMutation } =
+    userMutation();
 
   const { data: usersData } = getAllUsersMutation();
   const { data: mealPlans } = getAllMealPlansMutation();
@@ -106,6 +107,7 @@ const Reservations = () => {
     checkOutGuestMutation();
   const { mutateAsync: refetchGuest, isPending: isSearchingGuest } =
     getUserByNicMutation();
+  const { mutateAsync: createUser, isPending: createUserLoading } = createUserMutation();
 
   // Dynamic Price Calculation
   const priceBreakdown = useMemo(() => {
@@ -209,13 +211,58 @@ const Reservations = () => {
     });
   };
 
-  const handleNextStep = async (values: any) => {
-    console.log('first');
+  const handleStepOne = async () => {
+    const values = stepOneForm.getFieldsValue();
     setStepDetails({ ...stepDetails, ...values });
     setCurrent(current + 1);
-    // if(current === 1){
-    //   handleGuestSearch(values.nic);
-    // }
+  };
+
+  const handleStepTwo = async () => {
+    const formData = stepOneForm.getFieldsValue();
+    const res = await refetchGuest(formData.nic);
+    if (res.success) {
+      setStepDetails({ ...stepDetails, ...formData, guestId: res.data.guestId });
+      setCurrent(current + 1);
+    } else {
+      const res = await createUser({
+        name: formData.guestName,
+        phone: formData.phone,
+        nic: formData.nic,
+      });
+      if (res.success) {
+        setStepDetails({ ...stepDetails, ...formData, guestId: res.data.guestId });
+        setCurrent(current + 1);
+      }
+    }
+  };
+
+  const handleStepThree = async () => {
+    const values = stepOneForm.getFieldsValue();
+    console.log(values);
+    const data = {
+      guestId: stepDetails?.guestId,
+      roomId: values.roomId,
+      planId: values.mealPlan,
+      checkIn: values.dates?.[0]?.format('YYYY-MM-DD'),
+      checkOut: values.dates?.[1]?.format('YYYY-MM-DD'),
+      guestCount: values.guestCount,
+      reservationDetails: values.selectedFoods?.map((f: any) => ({
+        itemId: f.itemId,
+        orderedQty: f.ordered_qty,
+      })),
+    };
+    console.log(data);
+    console.log(stepDetails);
+
+    createReservation(data as any, {
+      onSuccess: (res) => {
+        if (res.success) {
+          setIsDrawerOpen(false);
+          stepOneForm.resetFields();
+          setCurrent(0);
+        }
+      },
+    });
   };
 
   const handleGuestSearch = async (nic: string) => {
@@ -232,36 +279,9 @@ const Reservations = () => {
         phone: res.data.phone,
       });
       successToast('Guest found and details populated!');
+    } else {
+      errorToast('Guest not found');
     }
-  };
-
-  const submitReservation = async () => {
-    const values = stepOneForm.getFieldsValue();
-    const data = {
-      guestId: values.guestId,
-      roomId: values.roomId,
-      planId: values.mealPlan,
-      checkIn: values.dates?.[0]?.format('YYYY-MM-DD'),
-      checkOut: values.dates?.[1]?.format('YYYY-MM-DD'),
-      status: 'PENDING',
-      reservationDetails:
-        values.selectedFoods?.map((f: any) => ({
-          itemId: f.itemId,
-          orderedQty: f.ordered_qty,
-        })) || [],
-      totalAmount: priceBreakdown.total,
-    };
-    console.log(data);
-    console.log(stepDetails);
-    // createReservation(data as any, {
-    //   onSuccess: (res) => {
-    //     if (res.success) {
-    //       setIsDrawerOpen(false);
-    //       stepOneForm.resetFields();
-    //       setCurrent(0);
-    //     }
-    //   },
-    // });
   };
 
   // --- Stepper UI Components ---
@@ -450,7 +470,11 @@ const Reservations = () => {
       {/* --- 3. Main Data Table --- */}
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
-          dataSource={reservationsData?.data || []}
+          dataSource={
+            reservationsData?.data?.filter(
+              (item: Reservation) => item.status === 'PENDING',
+            ) || []
+          }
           columns={columns}
           loading={isReservationsLoading}
           pagination={{ pageSize: 8 }}
@@ -473,67 +497,77 @@ const Reservations = () => {
         open={isDrawerOpen}
         className="custom-scrollbar rounded-l-[2.5rem]"
         footer={
-         
-            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-6 backdrop-blur-md">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  Total Estimated Amount
-                </span>
-                <span className="text-2xl font-black tracking-tighter text-[#0F2942]">
-                  LKR {priceBreakdown.total.toLocaleString()}
-                </span>
-                {priceBreakdown.total > 0 && (
-                  <div className="mt-1 flex gap-2 text-[10px] font-semibold text-gray-500">
-                    {priceBreakdown.roomCost > 0 && (
-                      <span>Room: {priceBreakdown.roomCost.toLocaleString()}</span>
-                    )}
-                    {priceBreakdown.mealCost > 0 && (
-                      <span>Meal: {priceBreakdown.mealCost.toLocaleString()}</span>
-                    )}
-                    {priceBreakdown.foodCost > 0 && (
-                      <span>Food: {priceBreakdown.foodCost.toLocaleString()}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  disabled={current === 0}
-                  onClick={() => setCurrent(current - 1)}
-                  icon={<ArrowLeft size={16} />}
-                  className="flex h-12 items-center gap-2 rounded-2xl border-none bg-white font-bold text-gray-600 shadow-sm transition-all hover:bg-gray-100"
-                >
-                  Back
-                </Button>
-
-                {current < 2 ? (
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      if (!isAvailabilityChecked) {
-                        errorToast('Please check room availability first!');
-                        return;
-                      }
-                      stepOneForm.submit();
-                    }}
-                    className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
-                  >
-                    Next <ArrowRight size={16} />
-                  </Button>
-                ) : (
-                  <Button
-                    type="primary"
-                    onClick={submitReservation}
-                    loading={createReservationLoading}
-                    className="flex h-12 items-center gap-2 rounded-2xl border-none bg-green-600 px-8 font-bold text-white shadow-lg shadow-green-100 transition-all hover:scale-105 hover:bg-green-700"
-                  >
-                    Confirm Booking
-                  </Button>
-                )}
-              </div>
+          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-6 backdrop-blur-md">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Total Estimated Amount
+              </span>
+              <span className="text-2xl font-black tracking-tighter text-[#0F2942]">
+                LKR {priceBreakdown.total.toLocaleString()}
+              </span>
+              {priceBreakdown.total > 0 && (
+                <div className="mt-1 flex gap-2 text-[10px] font-semibold text-gray-500">
+                  {priceBreakdown.roomCost > 0 && (
+                    <span>Room: {priceBreakdown.roomCost.toLocaleString()}</span>
+                  )}
+                  {priceBreakdown.mealCost > 0 && (
+                    <span>Meal: {priceBreakdown.mealCost.toLocaleString()}</span>
+                  )}
+                  {priceBreakdown.foodCost > 0 && (
+                    <span>Food: {priceBreakdown.foodCost.toLocaleString()}</span>
+                  )}
+                </div>
+              )}
             </div>
-          
+
+            <div className="flex gap-3">
+              <Button
+                disabled={current === 0}
+                onClick={() => setCurrent(current - 1)}
+                icon={<ArrowLeft size={16} />}
+                className="flex h-12 items-center gap-2 rounded-2xl border-none bg-white font-bold text-gray-600 shadow-sm transition-all hover:bg-gray-100"
+              >
+                Back
+              </Button>
+
+              {current === 0 ? (
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    if (!isAvailabilityChecked) {
+                      errorToast('Please check room availability first!');
+                      return;
+                    }
+                    handleStepOne();
+                  }}
+                  className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
+                >
+                  Next <ArrowRight size={16} />
+                </Button>
+              ) : current === 1 ? (
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    handleStepTwo();
+                  }}
+                  className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
+                >
+                  Save user & Next <ArrowRight size={16} />
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    handleStepThree();
+                  }}
+                  loading={createReservationLoading}
+                  className="flex h-12 items-center gap-2 rounded-2xl border-none bg-green-600 px-8 font-bold text-white shadow-lg shadow-green-100 transition-all hover:scale-105 hover:bg-green-700"
+                >
+                  Confirm Booking
+                </Button>
+              )}
+            </div>
+          </div>
         }
       >
         {drawerType === 'view' ? (
@@ -550,12 +584,7 @@ const Reservations = () => {
               />
             </div>
 
-            <Form
-              form={stepOneForm}
-              layout="vertical"
-              className="px-2 pb-20"
-              onFinish={handleNextStep}
-            >
+            <Form form={stepOneForm} layout="vertical" className="px-2 pb-20">
               {/* STEP 1: AVAILABILITY CHECK */}
               <div
                 className={`${
