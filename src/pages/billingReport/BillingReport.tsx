@@ -1,10 +1,38 @@
 import { useState } from 'react';
 import { Table, Tag, Button, Input, Drawer, Space, Divider } from 'antd';
-import { Search, Filter, Eye, Printer, CreditCard, Download, CheckCircle2 } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Eye,
+  Printer,
+  CreditCard,
+  Download,
+  CheckCircle2,
+} from 'lucide-react';
+import reservationMutation from '../../mutations/reservation.mutation';
+import type { Reservation, Room } from '../../types/services.interfaces';
+import mealMutation from '../../mutations/meal.mutation';
+import roomMutation from '../../mutations/room.mutation';
+import userMutation from '../../mutations/user.mutation';
 
 const BillingAndPayments = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+
+  //------------------------------------------------ mutations -----------------------------------------------
+  const { getAllMealPlansMutation, getAllFoodItemsMutation } = mealMutation();
+  const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
+  const { getAllReservationsQuery } = reservationMutation();
+
+  const { getAllUsersMutation } = userMutation();
+
+  const { data: usersData } = getAllUsersMutation();
+  const { data: mealPlans } = getAllMealPlansMutation();
+  const { data: foodItems } = getAllFoodItemsMutation();
+  const { data: rooms } = getAllRoomsMutation();
+  const { data: roomTypes } = getAllRoomTypesMutation();
+  const { data: reservationsData, isLoading: isReservationsLoading } =
+    getAllReservationsQuery();
 
   // Sample Data for Billing
   const dataSource = [
@@ -30,34 +58,67 @@ const BillingAndPayments = () => {
 
   const columns = [
     {
-      title: 'Invoice No',
-      dataIndex: 'invNo',
-      key: 'invNo',
-      render: (text: string) => <span className="font-bold text-blue-600">{text}</span>,
+      title: 'Guest Name',
+      dataIndex: 'guestId',
+      key: 'guestId',
+      render: (text: string) => (
+        <span className="font-bold text-blue-600">
+          {usersData?.data?.find((r: any) => r.guestId === text)?.name}
+        </span>
+      ),
     },
-    { title: 'Guest Name', dataIndex: 'guest', key: 'guest' },
-    { title: 'Res ID', dataIndex: 'resId', key: 'resId' },
     {
-      title: 'Total Amount (LKR)',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (val: string) => <span className="font-bold">{val}</span>,
+      title: 'Room No',
+      dataIndex: 'roomId',
+      key: 'roomId',
+      render: (text: string) => (
+        <span className="font-bold text-blue-600">
+          {rooms?.data?.find((r: Room) => r.roomId === text)?.roomNumber}
+        </span>
+      ),
     },
-    { title: 'Date', dataIndex: 'date', key: 'date' },
+    {
+      title: 'Duration',
+      key: 'duration',
+      render: (_: any, r: Reservation) => (
+        <span className="text-md font-semibold">
+          {r.checkIn} - {r.checkOut}
+        </span>
+      ),
+    },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'Paid' ? 'green' : 'orange'} className="rounded-full px-3">
+        <Tag
+          color={
+            status === 'CONFIRMED'
+              ? 'green'
+              : status === 'PENDING'
+                ? 'gold'
+                : status === 'COMPLETED'
+                  ? 'blue'
+                  : 'red'
+          }
+          className="rounded-full px-3"
+        >
           {status}
         </Tag>
       ),
     },
     {
+      title: 'Total (LKR)',
+      dataIndex: 'totalBill',
+      key: 'totalBill',
+      render: (val: number) => (
+        <span className="truncate font-semibold">Rs. {val?.toLocaleString()}</span>
+      ),
+    },
+    {
       title: 'Actions',
       key: 'actions',
-      render: (record: any) => (
+      render: (_: any, record: Reservation) => (
         <Space size="middle">
           <Button
             type="text"
@@ -66,10 +127,6 @@ const BillingAndPayments = () => {
               setSelectedInvoice(record);
               setIsDrawerOpen(true);
             }}
-          />
-          <Button
-            type="text"
-            icon={<Printer size={18} className="text-gray-400 hover:text-gray-600" />}
           />
           <Button
             type="text"
@@ -100,25 +157,13 @@ const BillingAndPayments = () => {
         </div>
       </div>
 
-      {/* --- 2. Filter Bar --- */}
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
-        <Input
-          prefix={<Search size={18} className="text-gray-400" />}
-          placeholder="Search by Invoice or Guest..."
-          className="h-11 w-full rounded-xl border-none shadow-sm md:w-80"
-        />
-        <Button
-          icon={<Filter size={18} />}
-          className="h-11 rounded-xl border-none shadow-sm"
-        >
-          Date Range
-        </Button>
-      </div>
-
       {/* --- 3. Main Data Table --- */}
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
-          dataSource={dataSource}
+          dataSource={
+            reservationsData?.data.filter((r: Reservation) => r.status === 'COMPLETED') ||
+            []
+          }
           columns={columns}
           pagination={{ pageSize: 8 }}
           className="custom-table"

@@ -71,7 +71,6 @@ const Reservations = () => {
   // Booking Drawer State
   const [drawerAvailableRooms, setDrawerAvailableRooms] = useState<Room[]>([]);
   const [isAvailabilityChecked, setIsAvailabilityChecked] = useState(false);
-  const [searchNic, setSearchNic] = useState('');
 
   const [current, setCurrent] = useState(0); // Stepper index
   const [stepDetails, setStepDetails] = useState({});
@@ -81,7 +80,6 @@ const Reservations = () => {
   const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
   const {
     getAllReservationsQuery,
-    getReservationByIdQuery,
     createReservationMutation,
     getAvailableRoomsMutation,
     deleteReservationMutation,
@@ -212,8 +210,12 @@ const Reservations = () => {
   };
 
   const handleNextStep = async (values: any) => {
+    console.log('first');
     setStepDetails({ ...stepDetails, ...values });
     setCurrent(current + 1);
+    // if(current === 1){
+    //   handleGuestSearch(values.nic);
+    // }
   };
 
   const handleGuestSearch = async (nic: string) => {
@@ -231,7 +233,6 @@ const Reservations = () => {
       });
       successToast('Guest found and details populated!');
     }
-    setSearchNic(nic);
   };
 
   const submitReservation = async () => {
@@ -360,7 +361,7 @@ const Reservations = () => {
             />
           </Popconfirm>
 
-          {record?.status === 'CONFIRMED' && (
+          {record?.status === 'PENDING' && (
             <Tooltip title="Complete Check-out">
               <Button
                 type="text"
@@ -472,7 +473,7 @@ const Reservations = () => {
         open={isDrawerOpen}
         className="custom-scrollbar rounded-l-[2.5rem]"
         footer={
-          drawerType !== 'view' && (
+         
             <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-6 backdrop-blur-md">
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -506,7 +507,7 @@ const Reservations = () => {
                   Back
                 </Button>
 
-                {current < steps.length - 1 ? (
+                {current < 2 ? (
                   <Button
                     type="primary"
                     onClick={() => {
@@ -532,7 +533,7 @@ const Reservations = () => {
                 )}
               </div>
             </div>
-          )
+          
         }
       >
         {drawerType === 'view' ? (
@@ -776,15 +777,6 @@ const Reservations = () => {
                   current === 1 ? 'block' : 'hidden'
                 } animate-in slide-in-from-right duration-500`}
               >
-                <div className="mb-6 rounded-[2rem] border border-blue-100 bg-blue-50/50 p-6 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">
-                    CURRENT ESTIMATION
-                  </p>
-                  <p className="text-3xl font-black tracking-tighter text-[#0F2942]">
-                    LKR {priceBreakdown.total.toLocaleString()}
-                  </p>
-                </div>
-
                 <div className="mb-8 rounded-[2rem] border border-gray-200 bg-gray-50 p-6">
                   <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-gray-400">
                     Identity Check
@@ -855,11 +847,9 @@ const Reservations = () => {
                       <div className="flex justify-between text-sm text-blue-100">
                         <span>
                           {priceBreakdown.nights} Nights x{' '}
-                          {
-                            roomTypes?.data?.find(
-                              (t: RoomType) => t.typeId === watchedRoomType,
-                            )?.typeName || 'Unknown Room'
-                          }
+                          {roomTypes?.data?.find(
+                            (t: RoomType) => t.typeId === watchedRoomType,
+                          )?.typeName || 'Unknown Room'}
                         </span>
                         <span className="font-bold text-white">
                           LKR {priceBreakdown.roomCost.toLocaleString()}
@@ -890,7 +880,7 @@ const Reservations = () => {
                       )}
                       <Divider className="my-2 border-blue-400/30" />
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-white uppercase tracking-widest text-[10px] opacity-70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-white opacity-70">
                           Total Payable
                         </span>
                         <span className="text-3xl font-black tracking-tighter text-white">

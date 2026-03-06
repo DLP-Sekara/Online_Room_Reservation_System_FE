@@ -4,30 +4,46 @@ import {
   BedDouble,
   LogOut,
   ChevronRight,
-  Clock,
-  CheckCircle2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import roomMutation from '../../mutations/room.mutation';
+import reservationMutation from '../../mutations/reservation.mutation';
+import userMutation from '../../mutations/user.mutation';
+import dayjs from 'dayjs';
 
 const MainDashboard = () => {
+  //------------------------------------------------ mutations -----------------------------------------------
+  const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
+  const { getAllReservationsQuery } = reservationMutation();
+  const { getAllUsersMutation } = userMutation();
+
+  const { data: rooms } = getAllRoomsMutation();
+  const { data: roomTypes } = getAllRoomTypesMutation();
+  const { data: reservationsData } = getAllReservationsQuery();
+  const { data: usersData } = getAllUsersMutation();
+
   const stats = [
     {
-      title: "Today's Arrivals",
-      value: '45',
-      sub: 'Guests arriving',
+      title: "Today's Guests",
+      value: usersData?.data?.length,
+      sub: 'Guests checked in',
       icon: <UserPlus className="text-white" />,
       color: 'bg-[#2CB1BC]',
     },
     {
       title: 'Occupied Rooms',
-      value: '180 / 250',
+      value:
+        rooms?.data?.filter((room: any) => room.status === 'OCCUPIED').length +
+        '/' +
+        rooms?.data?.length,
       sub: 'Rooms currently occupied',
       icon: <BedDouble className="text-white" />,
       color: 'bg-[#91C788]',
     },
     {
       title: 'Pending Checkouts',
-      value: '70',
+      value: reservationsData?.data?.filter((res: any) => res.checkOut === dayjs().format('YYYY-MM-DD') && res.status === 'PENDING')
+        .length,
       sub: "Today's ready for checkout",
       icon: <LogOut className="text-white" />,
       color: 'bg-[#F38181]',
@@ -35,12 +51,6 @@ const MainDashboard = () => {
   ];
 
   const navigate = useNavigate();
-
-  const rooms = Array(10).fill({
-    no: '101',
-    type: 'Deluxe King',
-    status: 'Occupied', // Occupied, Cleaning, Available
-  });
 
   return (
     <div className="animate-in fade-in space-y-8 duration-500">
@@ -84,20 +94,35 @@ const MainDashboard = () => {
         </div>
 
         <Row gutter={[16, 16]}>
-          {rooms.map((room, i) => (
+          {rooms?.data?.map((room: any, i: number) => (
             <Col xs={12} sm={8} md={6} lg={4.8} key={i}>
               <div className="cursor-pointer rounded-2xl border border-gray-50 bg-[#F8FAFC] p-4 shadow-md transition-all hover:bg-white">
                 <div
                   className={`mb-3 flex h-8 w-full items-center justify-start rounded-t-xl ${i % 3 === 0 ? 'bg-blue-400' : i % 3 === 1 ? 'bg-teal-400' : 'bg-green-400 opacity-50'}`}
                 >
-                  <span className="ml-4 text-lg font-bold text-gray-800">{room.no}</span>
+                  <span className="ml-4 text-lg font-bold text-gray-800">
+                    {room.roomNumber}
+                  </span>
                 </div>
-                <p className="mb-2 text-[11px] text-gray-500">{room.type}</p>
+                <p className="mb-2 text-[12px] text-gray-500">
+                  {
+                    roomTypes?.data?.find((type: any) => type.typeId === room.typeId)
+                      ?.typeName
+                  }
+                </p>
                 <Tag
-                  color={i % 3 === 0 ? 'blue' : i % 3 === 1 ? 'cyan' : 'green'}
-                  className="rounded-full px-3 text-[10px]"
+                  color={
+                    room.status === 'AVAILABLE'
+                      ? 'green'
+                      : room.status === 'CLEANING'
+                        ? 'gold'
+                        : room.status === 'OCCUPIED'
+                          ? 'blue'
+                          : 'red'
+                  }
+                  className="rounded-full px-3"
                 >
-                  {i % 3 === 0 ? 'Occupied' : i % 3 === 1 ? 'Cleaning' : 'Available'}
+                  {room.status}
                 </Tag>
               </div>
             </Col>
