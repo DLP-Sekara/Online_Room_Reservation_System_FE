@@ -51,6 +51,9 @@ const reservationService = () => {
         url: `api/v1/reservations/checkout/${resId}`,
         method: 'put',
       }),
+
+    getAllIncomesByMonth: (data: any) =>
+      handleRequest({ url: 'api/v1/reservations/income-stats', data, method: 'get' }),
   };
 };
 

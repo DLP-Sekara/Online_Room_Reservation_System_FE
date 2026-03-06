@@ -13,6 +13,7 @@ const reservationMutation = () => {
     deleteReservation,
     getAvailableRooms,
     checkOutGuest,
+    getAllIncomesByMonth,
   } = reservationService();
 
   const getAllReservationsQuery = () => {
@@ -95,6 +96,20 @@ const reservationMutation = () => {
     });
   };
 
+  const getAllIncomesByMonthMutation = (data: any) => {
+    return useMutation({
+      mutationFn: (data: any) => getAllIncomesByMonth(data),
+      onSuccess: (response: APIResponse) => {
+        if (!response.success) {
+          errorToast(response.message);
+        }
+      },
+      onError: (error: APIResponse) => {
+        errorToast(error.message || 'Failed to get incomes by month');
+      },
+    });
+  };
+  
   return {
     getAllReservationsQuery,
     getReservationByIdQuery,
@@ -102,6 +117,7 @@ const reservationMutation = () => {
     deleteReservationMutation,
     getAvailableRoomsMutation,
     checkOutGuestMutation,
+    getAllIncomesByMonthMutation,
   };
 };
 

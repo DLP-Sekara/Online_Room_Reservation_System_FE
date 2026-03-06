@@ -31,6 +31,7 @@ export interface Reservation {
   checkOut: string;
   contactNo: string;
   email?: string;
+  guestCount?: number;
   status:
     | 'PENDING'
     | 'COMPLETED'
@@ -62,6 +63,7 @@ export interface MealPlan {
   name: string;
   planCode: string; // e.g., BB, HB, FB
   price: number;
+  description?: string;
   status: 'Active' | 'Inactive';
 }
 
