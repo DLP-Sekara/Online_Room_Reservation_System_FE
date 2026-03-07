@@ -28,6 +28,9 @@ const settingService = () => {
 
     getCurrentSessions: () =>
       handleRequest({ url: 'api/v1/settings/sessions', method: 'get' }),
+
+    getAllSystemUsers: () =>
+      handleRequest({ url: 'api/v1/auth/all-users', method: 'get' }),
   };
 };
 

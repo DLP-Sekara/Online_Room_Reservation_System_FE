@@ -1,8 +1,39 @@
-import { Form, Input, Button, Tabs, Table, Tag, Divider, message, Card } from 'antd';
-import { KeyRound, UserPlus, Trash2 } from 'lucide-react';
+import {
+  Form,
+  Input,
+  Button,
+  Tabs,
+  Table,
+  Tag,
+  Divider,
+  Card,
+  Modal,
+  Select,
+} from 'antd';
+import { KeyRound, UserPlus, ShieldCheck, Mail, Lock, User } from 'lucide-react';
+import { useState } from 'react';
+import settingMutation from '../../mutations/setting.mutation';
+import { successToast } from '../../components/common/Alert';
+
+const { Option } = Select;
 
 const Settings = () => {
   const [passwordForm] = Form.useForm();
+  const [adminForm] = Form.useForm();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { addNewAdminMutation, getAllSystemUsersQuery } = settingMutation();
+  const { mutate: addAdmin, isPending: isAddingAdmin } = addNewAdminMutation();
+  const { data: systemUsersData, isLoading: isUsersLoading } = getAllSystemUsersQuery();
+
+  const handleAddAdmin = (values: any) => {
+    addAdmin(values, {
+      onSuccess: () => {
+        setIsModalOpen(false);
+        adminForm.resetFields();
+      },
+    });
+  };
 
   const tabItems = [
     {
@@ -20,6 +51,7 @@ const Settings = () => {
               type="primary"
               icon={<UserPlus size={16} />}
               className="rounded-lg bg-blue-600"
+              onClick={() => setIsModalOpen(true)}
             >
               Add Admin
             </Button>
@@ -27,20 +59,8 @@ const Settings = () => {
           <Card className="rounded-2xl border-gray-100 shadow-sm">
             <Table
               pagination={false}
-              dataSource={[
-                {
-                  key: '1',
-                  name: 'Super Admin',
-                  email: 'admin@oceanview.com',
-                  role: 'Full Access',
-                },
-                {
-                  key: '2',
-                  name: 'System Manager',
-                  email: 'manager@oceanview.com',
-                  role: 'Config Only',
-                },
-              ]}
+              loading={isUsersLoading}
+              dataSource={systemUsersData?.data || []}
               columns={[
                 {
                   title: 'Admin Name',
@@ -53,9 +73,10 @@ const Settings = () => {
                   title: 'Access Level',
                   dataIndex: 'role',
                   key: 'role',
-                  render: (r) => <Tag color="purple">{r}</Tag>,
+                  render: (r) => (
+                    <Tag color={r === 'SUPER_ADMIN' ? 'purple' : 'blue'}>{r}</Tag>
+                  ),
                 },
-               
               ]}
             />
           </Card>
@@ -77,7 +98,7 @@ const Settings = () => {
           <Form
             form={passwordForm}
             layout="vertical"
-            onFinish={() => message.success('Password changed successfully!')}
+            onFinish={() => successToast('Password changed successfully!')}
           >
             <Form.Item
               label="Current Password"
@@ -129,6 +150,108 @@ const Settings = () => {
           className="security-tabs"
         />
       </div>
+
+      <Modal
+        title={
+          <div className="flex items-center gap-2 pb-2">
+            <div className="rounded-lg bg-blue-50 p-2 text-blue-600">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Add System Administrator</h3>
+              <p className="text-xs font-normal text-gray-400">
+                Grant privileged access to the management system
+              </p>
+            </div>
+          </div>
+        }
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+        centered
+        width={500}
+        className="custom-modal"
+      >
+        <Form
+          form={adminForm}
+          layout="vertical"
+          onFinish={handleAddAdmin}
+          className="mt-6"
+        >
+          <Form.Item
+            label="Full Name"
+            name="name"
+            rules={[{ required: true, message: 'Please enter admin name' }]}
+          >
+            <Input
+              prefix={<User size={18} className="text-gray-400" />}
+              placeholder="e.g. Lahiru Siri"
+              className="h-12 rounded-xl"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Email Address"
+            name="email"
+            rules={[
+              { required: true, message: 'Please enter email address' },
+              { type: 'email', message: 'Please enter a valid email' },
+            ]}
+          >
+            <Input
+              prefix={<Mail size={18} className="text-gray-400" />}
+              placeholder="admin@example.com"
+              className="h-12 rounded-xl"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[
+              { required: true, message: 'Please enter password' },
+              { min: 6, message: 'Password must be at least 6 characters' },
+            ]}
+          >
+            <Input.Password
+              prefix={<Lock size={18} className="text-gray-400" />}
+              placeholder="••••••••"
+              className="h-12 rounded-xl"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Access Level"
+            name="role"
+            rules={[{ required: true, message: 'Please select a role' }]}
+            initialValue="ADMIN"
+          >
+            <Select size="large" className="w-full rounded-xl">
+              <Option value="SUPER_ADMIN">Super Admin (Full Access)</Option>
+              <Option value="ADMIN">System Admin (Regular Access)</Option>
+            </Select>
+          </Form.Item>
+
+          <div className="mt-8 flex gap-3">
+            <Button
+              size="large"
+              className="flex-1 rounded-xl"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              className="flex-1 rounded-xl bg-blue-600"
+              htmlType="submit"
+              loading={isAddingAdmin}
+            >
+              Create Admin
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 };
