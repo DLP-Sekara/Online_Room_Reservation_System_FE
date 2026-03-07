@@ -1,5 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
+
 import {
   Table,
   Tag,
@@ -19,6 +21,7 @@ import {
   Tooltip,
   Popconfirm,
   Modal,
+  Avatar,
 } from 'antd';
 import {
   Plus,
@@ -49,6 +52,11 @@ import { ReservationPreview } from './components/ReservationPreview';
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
+const disabledDate = (current: dayjs.Dayjs) => {
+  // Can't select days before today
+  return current && current < dayjs().startOf('day');
+};
+
 const Reservations = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState('add');
@@ -75,6 +83,30 @@ const Reservations = () => {
   const [current, setCurrent] = useState(0); // Stepper index
   const [stepDetails, setStepDetails] = useState<any>({});
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [reservationFilters, setReservationFilters] = useState({
+    startDate: searchParams.get('startDate') || '',
+    endDate: searchParams.get('endDate') || '',
+    guestName: searchParams.get('guestName') || '',
+    status: searchParams.get('status') || '',
+    page: parseInt(searchParams.get('page') || '0'),
+    size: parseInt(searchParams.get('size') || '10'),
+  });
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params: any = {};
+    if (reservationFilters.startDate) params.startDate = reservationFilters.startDate;
+    if (reservationFilters.endDate) params.endDate = reservationFilters.endDate;
+    if (reservationFilters.guestName) params.guestName = reservationFilters.guestName;
+    if (reservationFilters.status) params.status = reservationFilters.status;
+    if (reservationFilters.page > 0) params.page = reservationFilters.page.toString();
+    if (reservationFilters.size !== 10) params.size = reservationFilters.size.toString();
+
+    setSearchParams(params, { replace: true });
+  }, [reservationFilters, setSearchParams]);
+
   //------------------------------------------------ mutations -----------------------------------------------
   const { getAllMealPlansMutation, getAllFoodItemsMutation } = mealMutation();
   const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
@@ -96,7 +128,7 @@ const Reservations = () => {
   const { data: roomTypes } = getAllRoomTypesMutation();
 
   const { data: reservationsData, isLoading: isReservationsLoading } =
-    getAllReservationsQuery();
+    getAllReservationsQuery(reservationFilters);
   const { mutateAsync: createReservation, isPending: createReservationLoading } =
     createReservationMutation();
   const { mutateAsync: getAvailableRooms, isPending: isSearching } =
@@ -238,7 +270,6 @@ const Reservations = () => {
 
   const handleStepThree = async () => {
     const values = stepOneForm.getFieldsValue();
-    console.log(values);
     const data = {
       guestId: stepDetails?.guestId,
       roomId: values.roomId,
@@ -251,8 +282,6 @@ const Reservations = () => {
         orderedQty: f.ordered_qty,
       })),
     };
-    console.log(data);
-    console.log(stepDetails);
 
     createReservation(data as any, {
       onSuccess: (res) => {
@@ -298,7 +327,11 @@ const Reservations = () => {
       dataIndex: 'guestId',
       key: 'guestId',
       render: (text: string) => (
-        <span className="font-bold text-blue-600">
+        <span className="flex flex-row items-center gap-2 font-bold text-blue-600">
+          <Avatar className="bg-blue-100 font-bold text-blue-600">
+            {usersData?.data?.find((r: any) => r.guestId === text)?.name?.charAt(0) ||
+              'U'}
+          </Avatar>
           {usersData?.data?.find((r: any) => r.guestId === text)?.name}
         </span>
       ),
@@ -432,8 +465,9 @@ const Reservations = () => {
               <CalendarCheck size={16} /> Stay Duration
             </label>
             <RangePicker
-              className="h-12 w-full rounded-xl border-none shadow-sm"
+              className="h-12 w-full rounded-xl shadow-sm"
               value={quickCheckDates}
+              disabledDate={disabledDate}
               onChange={(dates) => setQuickCheckDates(dates)}
             />
           </div>
@@ -444,7 +478,7 @@ const Reservations = () => {
             </label>
             <Select
               placeholder="Select Type"
-              className="h-12 w-full rounded-xl border-none bg-white shadow-sm"
+              className="h-12 w-full rounded-xl bg-white shadow-sm"
               value={quickCheckRoomType}
               onChange={(value) => setQuickCheckRoomType(value)}
             >
@@ -467,17 +501,89 @@ const Reservations = () => {
         </div>
       </Card>
 
-      {/* --- 3. Main Data Table --- */}
+      {/* --- Filters Section --- */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <Input.Search
+          placeholder="Search Guest Name"
+          allowClear
+          value={reservationFilters.guestName}
+          onChange={(e) =>
+            setReservationFilters({ ...reservationFilters, guestName: e.target.value })
+          }
+          onSearch={(value) =>
+            setReservationFilters({ ...reservationFilters, guestName: value, page: 0 })
+          }
+          className="rounded-xl"
+          size="large"
+        />
+
+        <RangePicker
+          className="h-10 w-full rounded-xl"
+          value={
+            reservationFilters.startDate && reservationFilters.endDate
+              ? [dayjs(reservationFilters.startDate), dayjs(reservationFilters.endDate)]
+              : null
+          }
+          onChange={(dates) =>
+            setReservationFilters({
+              ...reservationFilters,
+              startDate: dates ? dates[0]?.format('YYYY-MM-DD') || '' : '',
+              endDate: dates ? dates[1]?.format('YYYY-MM-DD') || '' : '',
+              page: 0,
+            })
+          }
+        />
+
+        <Select
+          placeholder="Filter by Status"
+          allowClear
+          className="w-full rounded-xl"
+          size="large"
+          value={reservationFilters.status || undefined}
+          onChange={(value) =>
+            setReservationFilters({ ...reservationFilters, status: value || '', page: 0 })
+          }
+        >
+          <Option value="PENDING">Pending</Option>
+          <Option value="CONFIRMED">Confirmed</Option>
+          <Option value="COMPLETED">Completed</Option>
+          <Option value="CANCELLED">Cancelled</Option>
+        </Select>
+
+        <Button
+          onClick={() =>
+            setReservationFilters({
+              startDate: '',
+              endDate: '',
+              guestName: '',
+              status: '',
+              page: 0,
+              size: 10,
+            })
+          }
+          className="h-12 rounded-xl border-none text-red-400"
+        >
+          Clear Filters
+        </Button>
+      </div>
+
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
-          dataSource={
-            reservationsData?.data?.filter(
-              (item: Reservation) => item.status === 'PENDING',
-            ) || []
-          }
+          dataSource={reservationsData?.data?.content || []}
           columns={columns}
           loading={isReservationsLoading}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            current: (reservationsData?.data?.pageable?.pageNumber || 0) + 1,
+            pageSize: reservationsData?.data?.pageable?.pageSize || 10,
+            total: reservationsData?.data?.totalElements || 0,
+            onChange: (page, pageSize) => {
+              setReservationFilters({
+                ...reservationFilters,
+                page: page - 1,
+                size: pageSize,
+              });
+            },
+          }}
           className="custom-table"
         />
       </div>
@@ -497,77 +603,80 @@ const Reservations = () => {
         open={isDrawerOpen}
         className="custom-scrollbar rounded-l-[2.5rem]"
         footer={
-          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-6 backdrop-blur-md">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Total Estimated Amount
-              </span>
-              <span className="text-2xl font-black tracking-tighter text-[#0F2942]">
-                LKR {priceBreakdown.total.toLocaleString()}
-              </span>
-              {priceBreakdown.total > 0 && (
-                <div className="mt-1 flex gap-2 text-[10px] font-semibold text-gray-500">
-                  {priceBreakdown.roomCost > 0 && (
-                    <span>Room: {priceBreakdown.roomCost.toLocaleString()}</span>
-                  )}
-                  {priceBreakdown.mealCost > 0 && (
-                    <span>Meal: {priceBreakdown.mealCost.toLocaleString()}</span>
-                  )}
-                  {priceBreakdown.foodCost > 0 && (
-                    <span>Food: {priceBreakdown.foodCost.toLocaleString()}</span>
-                  )}
-                </div>
-              )}
-            </div>
+          drawerType === 'view' ? null : (
+            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 p-6 backdrop-blur-md">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Total Estimated Amount
+                </span>
+                <span className="text-2xl font-black tracking-tighter text-[#0F2942]">
+                  LKR {priceBreakdown.total.toLocaleString()}
+                </span>
+                {priceBreakdown.total > 0 && (
+                  <div className="mt-1 flex gap-2 text-[10px] font-semibold text-gray-500">
+                    {priceBreakdown.roomCost > 0 && (
+                      <span>Room: {priceBreakdown.roomCost.toLocaleString()}</span>
+                    )}
+                    {priceBreakdown.mealCost > 0 && (
+                      <span>Meal: {priceBreakdown.mealCost.toLocaleString()}</span>
+                    )}
+                    {priceBreakdown.foodCost > 0 && (
+                      <span>Food: {priceBreakdown.foodCost.toLocaleString()}</span>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            <div className="flex gap-3">
-              <Button
-                disabled={current === 0}
-                onClick={() => setCurrent(current - 1)}
-                icon={<ArrowLeft size={16} />}
-                className="flex h-12 items-center gap-2 rounded-2xl border-none bg-white font-bold text-gray-600 shadow-sm transition-all hover:bg-gray-100"
-              >
-                Back
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  disabled={current === 0}
+                  onClick={() => setCurrent(current - 1)}
+                  icon={<ArrowLeft size={16} />}
+                  className="flex h-12 items-center gap-2 rounded-2xl border-none bg-white font-bold text-gray-600 shadow-sm transition-all hover:bg-gray-100"
+                >
+                  Back
+                </Button>
 
-              {current === 0 ? (
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    if (!isAvailabilityChecked) {
-                      errorToast('Please check room availability first!');
-                      return;
-                    }
-                    handleStepOne();
-                  }}
-                  className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
-                >
-                  Next <ArrowRight size={16} />
-                </Button>
-              ) : current === 1 ? (
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    handleStepTwo();
-                  }}
-                  className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
-                >
-                  Save user & Next <ArrowRight size={16} />
-                </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    handleStepThree();
-                  }}
-                  loading={createReservationLoading}
-                  className="flex h-12 items-center gap-2 rounded-2xl border-none bg-green-600 px-8 font-bold text-white shadow-lg shadow-green-100 transition-all hover:scale-105 hover:bg-green-700"
-                >
-                  Confirm Booking
-                </Button>
-              )}
+                {current === 0 ? (
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      if (!isAvailabilityChecked) {
+                        errorToast('Please check room availability first!');
+                        return;
+                      }
+                      handleStepOne();
+                    }}
+                    className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
+                  >
+                    Next <ArrowRight size={16} />
+                  </Button>
+                ) : current === 1 ? (
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      handleStepTwo();
+                    }}
+                    loading={createUserLoading}
+                    className="flex h-12 items-center gap-2 rounded-2xl bg-[#0F2942] px-8 font-bold shadow-lg shadow-blue-100 transition-all hover:scale-105"
+                  >
+                    Save user & Next <ArrowRight size={16} />
+                  </Button>
+                ) : (
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      handleStepThree();
+                    }}
+                    loading={createReservationLoading}
+                    className="flex h-12 items-center gap-2 rounded-2xl border-none bg-green-600 px-8 font-bold text-white shadow-lg shadow-green-100 transition-all hover:scale-105 hover:bg-green-700"
+                  >
+                    Confirm Booking
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          )
         }
       >
         {drawerType === 'view' ? (
@@ -594,10 +703,25 @@ const Reservations = () => {
                 <Form.Item
                   label="Select Stay Dates"
                   name="dates"
-                  rules={[{ required: true }]}
+                  rules={[
+                    { required: true },
+                    {
+                      validator: (_, value) => {
+                        if (value && value[0] && value[1]) {
+                          if (value[1].isSame(value[0], 'day')) {
+                            return Promise.reject(
+                              new Error('Check-out date must be after check-in date'),
+                            );
+                          }
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
                 >
                   <RangePicker
                     className="h-12 w-full shadow-sm"
+                    disabledDate={disabledDate}
                     onChange={() => setIsAvailabilityChecked(false)}
                   />
                 </Form.Item>
@@ -833,7 +957,17 @@ const Reservations = () => {
 
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item label="NIC " name="nic" rules={[{ required: true }]}>
+                    <Form.Item
+                      label="NIC "
+                      name="nic"
+                      rules={[
+                        { required: true },
+                        {
+                          pattern: /^([0-9]{9}[vVxX]|[0-9]{12})$/,
+                          message: 'Enter a valid NIC (e.g., 123456789V or 123456789012)',
+                        },
+                      ]}
+                    >
                       <Input className="h-11 rounded-xl" placeholder="Enter NIC " />
                     </Form.Item>
                   </Col>

@@ -9,6 +9,7 @@ import MealManagement from '../pages/mealManagement/MealManagement';
 import BillingReport from '../pages/billingReport/BillingReport';
 import Users from '../pages/users/Users';
 import Settings from '../pages/settings/Settings';
+import UserGuide from '../pages/UserGuide/UserGuide';
 import ProtectedRoute from './ProtectedStep';
 import { useAuth } from '../hooks/useAuth';
 
@@ -19,6 +20,7 @@ const Routers = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/server-error" element={<ServerError />} />
+      <Route path="/user-guide" element={<UserGuide />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
 
       <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>

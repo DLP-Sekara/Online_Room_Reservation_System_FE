@@ -16,10 +16,10 @@ const reservationMutation = () => {
     getAllIncomesByMonth,
   } = reservationService();
 
-  const getAllReservationsQuery = () => {
+  const getAllReservationsQuery = (data: any) => {
     return useQuery({
-      queryKey: ['reservations'],
-      queryFn: () => getAllReservations(),
+      queryKey: ['reservations', data],
+      queryFn: () => getAllReservations(data),
     });
   };
 
@@ -96,7 +96,7 @@ const reservationMutation = () => {
     });
   };
 
-  const getAllIncomesByMonthMutation = (data: any) => {
+  const getAllIncomesByMonthMutation = () => {
     return useMutation({
       mutationFn: (data: any) => getAllIncomesByMonth(data),
       onSuccess: (response: APIResponse) => {
@@ -109,7 +109,7 @@ const reservationMutation = () => {
       },
     });
   };
-  
+
   return {
     getAllReservationsQuery,
     getReservationByIdQuery,

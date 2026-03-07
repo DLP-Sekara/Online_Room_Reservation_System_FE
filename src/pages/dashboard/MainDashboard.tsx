@@ -1,10 +1,5 @@
 import { Col, Row, Tag, Button } from 'antd';
-import {
-  UserPlus,
-  BedDouble,
-  LogOut,
-  ChevronRight,
-} from 'lucide-react';
+import { UserPlus, BedDouble, LogOut, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import roomMutation from '../../mutations/room.mutation';
 import reservationMutation from '../../mutations/reservation.mutation';
@@ -16,10 +11,14 @@ const MainDashboard = () => {
   const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
   const { getAllReservationsQuery } = reservationMutation();
   const { getAllUsersMutation } = userMutation();
+  const reservationFilters = {
+    page: 0,
+    size: 1000,
+  };
 
   const { data: rooms } = getAllRoomsMutation();
   const { data: roomTypes } = getAllRoomTypesMutation();
-  const { data: reservationsData } = getAllReservationsQuery();
+  const { data: reservationsData } = getAllReservationsQuery(reservationFilters);
   const { data: usersData } = getAllUsersMutation();
 
   const stats = [
@@ -42,8 +41,10 @@ const MainDashboard = () => {
     },
     {
       title: 'Pending Checkouts',
-      value: reservationsData?.data?.filter((res: any) => res.checkOut === dayjs().format('YYYY-MM-DD') && res.status === 'PENDING')
-        .length,
+      value: reservationsData?.data?.content?.filter(
+        (res: any) =>
+          res.checkOut === dayjs().format('YYYY-MM-DD') && res.status === 'PENDING',
+      ).length,
       sub: "Today's ready for checkout",
       icon: <LogOut className="text-white" />,
       color: 'bg-[#F38181]',
@@ -81,7 +82,7 @@ const MainDashboard = () => {
       </Row>
 
       {/* 2. Live Room Status Grid */}
-      <div className="rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm">
+      <div className="rounded-[2rem] border border-gray-100 bg-white p-4 shadow-md">
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#0F2942]">Live Room Status</h3>
           <Button

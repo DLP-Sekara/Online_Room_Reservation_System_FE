@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Tag, Button, Input, Drawer, Space, Divider, DatePicker } from 'antd';
-import { Search, Filter, Eye, Printer, Download } from 'lucide-react';
+import { Table, Tag, Button, Drawer, Space, DatePicker } from 'antd';
+import { Eye, Printer, Download } from 'lucide-react';
 import reservationMutation from '../../mutations/reservation.mutation';
 import type { Reservation, Room } from '../../types/services.interfaces';
 import mealMutation from '../../mutations/meal.mutation';
@@ -14,6 +14,10 @@ import dayjs from 'dayjs';
 const BillingAndPayments = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const reservationFilters = {
+    page: 0,
+    size: 1000,
+  };
 
   //------------------------------------------------ mutations -----------------------------------------------
   const { getAllMealPlansMutation, getAllFoodItemsMutation } = mealMutation();
@@ -24,7 +28,7 @@ const BillingAndPayments = () => {
     mutate: getIncomes,
     data: incomeData,
     isPending: isIncomeLoading,
-  } = getAllIncomesByMonthMutation({} as any);
+  } = getAllIncomesByMonthMutation();
 
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
@@ -43,7 +47,7 @@ const BillingAndPayments = () => {
   const { data: foodItems } = getAllFoodItemsMutation();
   const { data: rooms } = getAllRoomsMutation();
   const { data: roomTypes } = getAllRoomTypesMutation();
-  const { data: reservationsData } = getAllReservationsQuery();
+  const { data: reservationsData } = getAllReservationsQuery(reservationFilters);
 
   const handlePrint = () => {
     window.print();
@@ -202,8 +206,9 @@ const BillingAndPayments = () => {
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
           dataSource={
-            reservationsData?.data.filter((r: Reservation) => r.status === 'COMPLETED') ||
-            []
+            reservationsData?.data?.content?.filter(
+              (r: Reservation) => r.status === 'COMPLETED',
+            ) || []
           }
           columns={columns}
           pagination={{ pageSize: 8 }}

@@ -1,15 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Table,
-  Tag,
-  Button,
-  Input,
-  Drawer,
-  Space,
-  Form,
-  Avatar,
-  Popconfirm,
-} from 'antd';
+import { Table, Tag, Button, Input, Drawer, Space, Form, Avatar, Popconfirm } from 'antd';
 import { Edit, Trash2, ShieldCheck, Phone } from 'lucide-react';
 import userMutation from '../../mutations/user.mutation';
 import type { UserAccount } from '../../types/services.interfaces';
@@ -176,9 +166,21 @@ const Users = () => {
             </div>
           </div>
 
-          <Form.Item label="NIC Number" name="nic">
-            <Input placeholder="e.g. 199012345678" className="h-10 rounded-lg" />
-          </Form.Item>
+          {drawerType !== 'edit' && (
+            <Form.Item
+              label="NIC Number"
+              name="nic"
+              rules={[
+                { required: true },
+                {
+                  pattern: /^([0-9]{9}[vVxX]|[0-9]{12})$/,
+                  message: 'Enter a valid NIC (e.g., 123456789V or 123456789012)',
+                },
+              ]}
+            >
+              <Input placeholder="e.g. 199012345678" className="h-10 rounded-lg" />
+            </Form.Item>
+          )}
 
           <Form.Item label="Phone Number" name="phone">
             <Input

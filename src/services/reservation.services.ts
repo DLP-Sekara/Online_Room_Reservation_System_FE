@@ -27,8 +27,8 @@ const handleRequest = async ({
 
 const reservationService = () => {
   return {
-    getAllReservations: () =>
-      handleRequest({ url: 'api/v1/reservations/all', method: 'get' }),
+    getAllReservations: (data:any) =>
+      handleRequest({ url: 'api/v1/reservations/all',data, method: 'get' }),
 
     getReservationById: (id: string) =>
       handleRequest({ url: `api/v1/reservations/${id}`, method: 'get' }),

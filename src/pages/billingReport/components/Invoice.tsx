@@ -42,10 +42,7 @@ export const Invoice = ({
       return sum + (item?.unitPrice || 0) * (detail.orderedQty || 0);
     }, 0) || 0;
 
-  const subtotal = roomTotal + mealTotal + foodItemsTotal;
-  const serviceCharge = subtotal * 0.1;
-  const tax = subtotal * 0.15;
-  const grandTotal = subtotal + serviceCharge + tax;
+  const totalAmount = roomTotal + mealTotal + foodItemsTotal;
 
   return (
     <div
@@ -148,25 +145,17 @@ export const Invoice = ({
         <div className="w-64 space-y-2">
           <div className="flex justify-between text-xs text-gray-500">
             <span>Subtotal</span>
-            <span>LKR {subtotal.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Service Charge (10%)</span>
-            <span>LKR {serviceCharge.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Tax (15%)</span>
-            <span>LKR {tax.toLocaleString()}</span>
+            <span>LKR {totalAmount.toLocaleString()}</span>
           </div>
           <Divider className="my-2" />
           <div className="flex items-center justify-between rounded-xl bg-blue-50 p-4">
-            <span className="font-bold text-blue-900">Total</span>
+            <span className="font-bold text-blue-900">Total Payable</span>
             <div className="text-right">
               <span className="block text-[10px] font-bold uppercase text-blue-400">
                 Amount Due
               </span>
               <span className="font-['Outfit'] text-2xl font-black text-blue-600">
-                LKR {grandTotal.toLocaleString()}
+                LKR {totalAmount.toLocaleString()}
               </span>
             </div>
           </div>

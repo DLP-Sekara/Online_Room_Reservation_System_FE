@@ -5,6 +5,7 @@ import reservationMutation from '../../../mutations/reservation.mutation';
 import userMutation from '../../../mutations/user.mutation';
 import roomMutation from '../../../mutations/room.mutation';
 import mealMutation from '../../../mutations/meal.mutation';
+import dayjs from 'dayjs';
 
 export const ReservationPreview = ({ id }: { id: string }) => {
   const { getReservationByIdQuery } = reservationMutation();
@@ -32,7 +33,12 @@ export const ReservationPreview = ({ id }: { id: string }) => {
 
   const guest = usersData?.data?.find((u: any) => u.guestId === reservation.guestId);
   const room = roomsData?.data?.find((r: any) => r.roomId === reservation.roomId);
+  const roomType = roomTypes?.data?.find((r: any) => r.typeId === room.typeId);
   const mealPlan = mealsData?.data?.find((m: any) => m.planId === reservation.planId);
+
+  const nights = dayjs(reservation.checkOut).diff(dayjs(reservation.checkIn), 'day') || 1;
+  const roomCost = (roomType?.pricePerNight || 0) * nights;
+  const mealCost = (mealPlan?.price || 0) * (reservation.guestCount || 1) * nights;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500">
@@ -84,9 +90,12 @@ export const ReservationPreview = ({ id }: { id: string }) => {
           <Col span={12}>
             <div className="rounded-2xl border border-gray-100 p-4">
               <p className="mb-1 text-xs font-bold uppercase text-gray-400">Room Type</p>
-              <p className="font-bold text-gray-700">
-                {roomTypes?.data?.find((r: any) => r.typeId === room.typeId)?.typeName}
-              </p>
+              <div className="flex flex-col">
+                <p className="font-bold text-gray-700">{roomType?.typeName}</p>
+                <p className="text-xs font-semibold text-blue-500">
+                  Rs. {roomType?.pricePerNight?.toLocaleString()} / night
+                </p>
+              </div>
             </div>
           </Col>
           <Col span={12}>
@@ -111,16 +120,32 @@ export const ReservationPreview = ({ id }: { id: string }) => {
         </h3>
         <Card className="rounded-[2.5rem] border-none bg-gradient-to-br from-[#0F2942] to-[#1a4b7c] shadow-xl">
           <div className="space-y-4 p-2 text-white">
+            {/* Room Cost */}
             <div className="flex items-center justify-between rounded-2xl bg-white/10 p-4">
               <div>
-                <p className="font-bold">{mealPlan?.name || reservation.mealPlanId}</p>
-                <p className="text-sm font-bold">
-                  Rs. {mealPlan?.price?.toLocaleString() || reservation.mealPlanId}
+                <p className="text-xs font-bold uppercase text-blue-300/60">Room Stay</p>
+                <p className="font-bold">
+                  {roomType?.typeName} ({nights} nights)
                 </p>
               </div>
-              <Tag color="blue" className="rounded-lg">
-                {mealPlan?.planCode || 'BB'}
-              </Tag>
+              <p className="font-bold text-blue-100">Rs. {roomCost.toLocaleString()}</p>
+            </div>
+
+            {/* Meal Plan */}
+            <div className="flex items-center justify-between rounded-2xl bg-white/10 p-4">
+              <div>
+                <p className="text-xs font-bold uppercase text-blue-300/60">Meal Plan</p>
+                <p className="font-bold">{mealPlan?.name}</p>
+                <p className="text-[10px] text-blue-200/50">
+                  {reservation.guestCount} Guests x {nights} nights
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-blue-100">Rs. {mealCost.toLocaleString()}</p>
+                <Tag color="blue" className="mr-0 mt-1 rounded-lg">
+                  {mealPlan?.planCode}
+                </Tag>
+              </div>
             </div>
 
             {reservation?.reservationDetails?.length > 0 && (
@@ -174,8 +199,11 @@ export const ReservationPreview = ({ id }: { id: string }) => {
               <span className="font-medium text-blue-100">Total Amount</span>
               <span className="text-3xl font-black tracking-tighter">
                 Rs.{' '}
-                {reservation.totalAmount?.toLocaleString() ||
-                  reservation?.totalBill?.toLocaleString()}
+                {(
+                  reservation.totalAmount ||
+                  reservation.totalBill ||
+                  roomCost + mealCost + (reservation.additionalFoodCost || 0)
+                ).toLocaleString()}
               </span>
             </div>
 

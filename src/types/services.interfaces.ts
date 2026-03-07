@@ -16,6 +16,7 @@ export interface DashboardDetails {
 
 // 2. Reservation Interfaces
 export interface Reservation {
+  additionalFoodCost: number;
   reservationDetails: any;
   planId: any;
   typeId: any;

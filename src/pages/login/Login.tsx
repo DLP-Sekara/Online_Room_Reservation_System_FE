@@ -26,7 +26,7 @@ const Login = () => {
 
   return (
     <AdminOnBoardingLayout>
-      <div>
+      <div className="shadow-lg px-6 rounded-xl">
         <h2 className="font-spaceGrotesk text-center text-[20px] font-bold text-black md:text-[40px]">
           Ocean View Resort <br />
           Admin Portal
@@ -95,6 +95,7 @@ const Login = () => {
                   }}
                 />
               </Form.Item>
+              
               <div className="flex flex-row justify-end">
                 <span
                   className="hover:text-primary -mt-4 flex w-fit cursor-pointer justify-end text-[12px] font-medium text-[#0168FF] underline lg:text-[14px]"
