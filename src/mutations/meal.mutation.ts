@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { errorToast, successToast } from '../components/common/Alert';
 import type { APIResponse } from '../types/onBoarding.interfaces';
 import type { MealPlan, FoodItem } from '../types/services.interfaces';
@@ -7,13 +7,17 @@ import mealService from '../services/meal.services';
 const mealMutation = () => {
   const queryClient = useQueryClient();
   const {
+    getAllMealPlans,
     createMealPlan,
     updateMealPlan,
     deleteMealPlan,
+    getAllFoodItems,
     addFoodItem,
     updateFoodItem,
     deleteFoodItem,
   } = mealService();
+
+  // --- Meal Plan Mutations ---
 
   const createMealPlanMutation = () => {
     return useMutation({
@@ -34,8 +38,7 @@ const mealMutation = () => {
 
   const updateMealPlanMutation = () => {
     return useMutation({
-      mutationFn: ({ id, data }: { id: string; data: Partial<MealPlan> }) =>
-        updateMealPlan(id, data),
+      mutationFn: (data: Partial<MealPlan>) => updateMealPlan(data),
       onSuccess: (response: APIResponse) => {
         if (response.success) {
           successToast(response.message);
@@ -67,6 +70,16 @@ const mealMutation = () => {
     });
   };
 
+  const getAllMealPlansMutation = () => {
+    return useQuery({
+      queryKey: ['meal-plans'],
+      queryFn: () => getAllMealPlans(),
+      staleTime: 1000 * 60 * 60,
+    });
+  };
+
+  // --- Food Item Mutations ---
+
   const addFoodItemMutation = () => {
     return useMutation({
       mutationFn: (data: FoodItem) => addFoodItem(data),
@@ -86,8 +99,7 @@ const mealMutation = () => {
 
   const updateFoodItemMutation = () => {
     return useMutation({
-      mutationFn: ({ id, data }: { id: string; data: Partial<FoodItem> }) =>
-        updateFoodItem(id, data),
+      mutationFn: (data: Partial<FoodItem>) => updateFoodItem(data),
       onSuccess: (response: APIResponse) => {
         if (response.success) {
           successToast(response.message);
@@ -119,13 +131,23 @@ const mealMutation = () => {
     });
   };
 
+  const getAllFoodItemsMutation = () => {
+    return useQuery({
+      queryKey: ['food-items'],
+      queryFn: () => getAllFoodItems(),
+      staleTime: 1000 * 60 * 60,
+    });
+  };
+
   return {
     createMealPlanMutation,
     updateMealPlanMutation,
     deleteMealPlanMutation,
+    getAllMealPlansMutation,
     addFoodItemMutation,
     updateFoodItemMutation,
     deleteFoodItemMutation,
+    getAllFoodItemsMutation,
   };
 };
 

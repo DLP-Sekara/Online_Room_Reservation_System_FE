@@ -1,63 +1,144 @@
-import { useState } from 'react';
-import { Table, Tag, Button, Input, Drawer, Space, Divider } from 'antd';
-import { Search, Filter, Eye, Printer, CreditCard, Download, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Table, Tag, Button, Drawer, Space, DatePicker } from 'antd';
+import { Eye, Printer, Download } from 'lucide-react';
+import reservationMutation from '../../mutations/reservation.mutation';
+import type { Reservation, Room } from '../../types/services.interfaces';
+import mealMutation from '../../mutations/meal.mutation';
+import roomMutation from '../../mutations/room.mutation';
+import userMutation from '../../mutations/user.mutation';
+import { Invoice } from './components/Invoice';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import dayjs from 'dayjs';
 
 const BillingAndPayments = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const reservationFilters = {
+    page: 0,
+    size: 1000,
+  };
 
-  // Sample Data for Billing
-  const dataSource = [
-    {
-      key: '1',
-      invNo: 'INV-2024-001',
-      guest: 'John Doe',
-      resId: 'RES-1001',
-      amount: '65,000',
-      date: '2024-03-22',
-      status: 'Paid',
-    },
-    {
-      key: '2',
-      invNo: 'INV-2024-002',
-      guest: 'Jane Smith',
-      resId: 'RES-1002',
-      amount: '42,500',
-      date: '2024-03-25',
-      status: 'Pending',
-    },
-  ];
+  //------------------------------------------------ mutations -----------------------------------------------
+  const { getAllMealPlansMutation, getAllFoodItemsMutation } = mealMutation();
+  const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
+  const { getAllReservationsQuery, getAllIncomesByMonthMutation } = reservationMutation();
+
+  const {
+    mutate: getIncomes,
+    data: incomeData,
+    isPending: isIncomeLoading,
+  } = getAllIncomesByMonthMutation();
+
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+
+  useEffect(() => {
+    const data = {
+      year: selectedDate.year(),
+      month: selectedDate.month() + 1,
+    };
+    getIncomes(data);
+  }, [selectedDate, getIncomes]);
+
+  const { getAllUsersMutation } = userMutation();
+
+  const { data: usersData } = getAllUsersMutation();
+  const { data: mealPlans } = getAllMealPlansMutation();
+  const { data: foodItems } = getAllFoodItemsMutation();
+  const { data: rooms } = getAllRoomsMutation();
+  const { data: roomTypes } = getAllRoomTypesMutation();
+  const { data: reservationsData } = getAllReservationsQuery(reservationFilters);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('invoice-content');
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const imgWidth = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    pdf.save(`Invoice_${selectedInvoice?.resId?.split('-')[0]}.pdf`);
+  };
 
   const columns = [
     {
-      title: 'Invoice No',
-      dataIndex: 'invNo',
-      key: 'invNo',
-      render: (text: string) => <span className="font-bold text-blue-600">{text}</span>,
+      title: 'Guest Name',
+      dataIndex: 'guestId',
+      key: 'guestId',
+      render: (text: string) => (
+        <span className="font-bold text-blue-600">
+          {usersData?.data?.find((r: any) => r.guestId === text)?.name}
+        </span>
+      ),
     },
-    { title: 'Guest Name', dataIndex: 'guest', key: 'guest' },
-    { title: 'Res ID', dataIndex: 'resId', key: 'resId' },
     {
-      title: 'Total Amount (LKR)',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (val: string) => <span className="font-bold">{val}</span>,
+      title: 'Room No',
+      dataIndex: 'roomId',
+      key: 'roomId',
+      render: (text: string) => (
+        <span className="font-bold text-blue-600">
+          {rooms?.data?.find((r: Room) => r.roomId === text)?.roomNumber}
+        </span>
+      ),
     },
-    { title: 'Date', dataIndex: 'date', key: 'date' },
+    {
+      title: 'Duration',
+      key: 'duration',
+      render: (_: any, r: Reservation) => (
+        <span className="text-md font-semibold">
+          {r.checkIn} - {r.checkOut}
+        </span>
+      ),
+    },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'Paid' ? 'green' : 'orange'} className="rounded-full px-3">
+        <Tag
+          color={
+            status === 'CONFIRMED'
+              ? 'green'
+              : status === 'PENDING'
+                ? 'gold'
+                : status === 'COMPLETED'
+                  ? 'blue'
+                  : 'red'
+          }
+          className="rounded-full px-3"
+        >
           {status}
         </Tag>
       ),
     },
     {
+      title: 'Total (LKR)',
+      dataIndex: 'totalBill',
+      key: 'totalBill',
+      render: (val: number) => (
+        <span className="truncate font-semibold">Rs. {val?.toLocaleString()}</span>
+      ),
+    },
+    {
       title: 'Actions',
       key: 'actions',
-      render: (record: any) => (
+      render: (_: any, record: Reservation) => (
         <Space size="middle">
           <Button
             type="text"
@@ -66,14 +147,6 @@ const BillingAndPayments = () => {
               setSelectedInvoice(record);
               setIsDrawerOpen(true);
             }}
-          />
-          <Button
-            type="text"
-            icon={<Printer size={18} className="text-gray-400 hover:text-gray-600" />}
-          />
-          <Button
-            type="text"
-            icon={<Download size={18} className="text-gray-400 hover:text-gray-600" />}
           />
         </Space>
       ),
@@ -90,35 +163,53 @@ const BillingAndPayments = () => {
             Generate invoices and track hotel revenue
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Select Month
+            </span>
+            <DatePicker
+              picker="month"
+              value={selectedDate}
+              onChange={(date: any) => date && setSelectedDate(date)}
+              className="h-10 rounded-xl"
+            />
+          </div>
           <div className="rounded-2xl border border-blue-100 bg-blue-50 px-6 py-2">
             <p className="text-[10px] font-bold uppercase text-blue-600">
-              Total Revenue (Monthly)
+              Monthly Revenue ({selectedDate.format('MMM YYYY')})
             </p>
-            <p className="text-xl font-bold text-blue-900">LKR 1,240,500</p>
+            <p className="text-xl font-bold text-blue-900">
+              {isIncomeLoading ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                `LKR ${incomeData?.data?.monthlyIncome?.toLocaleString() || '0'}`
+              )}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 px-6 py-2">
+            <p className="text-[10px] font-bold uppercase text-blue-600">
+              Total Revenue (Lifetime)
+            </p>
+            <p className="text-xl font-bold text-blue-900">
+              {isIncomeLoading ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                `LKR ${incomeData?.data?.totalAllTimeIncome?.toLocaleString() || '0'}`
+              )}
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* --- 2. Filter Bar --- */}
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/50 p-2">
-        <Input
-          prefix={<Search size={18} className="text-gray-400" />}
-          placeholder="Search by Invoice or Guest..."
-          className="h-11 w-full rounded-xl border-none shadow-sm md:w-80"
-        />
-        <Button
-          icon={<Filter size={18} />}
-          className="h-11 rounded-xl border-none shadow-sm"
-        >
-          Date Range
-        </Button>
       </div>
 
       {/* --- 3. Main Data Table --- */}
       <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-sm">
         <Table
-          dataSource={dataSource}
+          dataSource={
+            reservationsData?.data?.content?.filter(
+              (r: Reservation) => r.status === 'COMPLETED',
+            ) || []
+          }
           columns={columns}
           pagination={{ pageSize: 8 }}
           className="custom-table"
@@ -129,97 +220,36 @@ const BillingAndPayments = () => {
       <Drawer
         title={<span className="text-xl font-bold">Invoice Details</span>}
         placement="right"
-        width={600}
+        width={700}
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
         extra={
           <Space>
-            <Button icon={<Printer size={16} />}>Print</Button>
+            <Button icon={<Printer size={16} />} onClick={handlePrint}>
+              Print
+            </Button>
             <Button
               type="primary"
-              className="flex items-center gap-2 rounded-lg border-none bg-blue-600"
+              icon={<Download size={16} />}
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-2 rounded-lg"
             >
-              <CreditCard size={16} /> Process Payment
+              Download PDF
             </Button>
           </Space>
         }
-        className="rounded-l-[2rem]"
+        className="custom-drawer rounded-l-[2rem]"
       >
-        {/* --- Modern Invoice Preview --- */}
-        <div className="rounded-[2rem] border border-gray-100 bg-white p-4 shadow-sm">
-          <div className="mb-8 flex items-start justify-between">
-            <div>
-              <h3 className="text-2xl font-black italic text-blue-600">OCEAN VIEW</h3>
-              <p className="text-[10px] uppercase tracking-widest text-gray-400">
-                Resort & Spa Galle
-              </p>
-            </div>
-            <div className="text-right">
-              <h4 className="text-lg font-bold uppercase tracking-tighter">Invoice</h4>
-              <p className="text-xs text-gray-500">No: {selectedInvoice?.invNo}</p>
-              <p className="text-xs text-gray-500">Date: {selectedInvoice?.date}</p>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <p className="mb-1 text-[10px] font-bold uppercase text-gray-400">Bill To:</p>
-            <p className="font-bold text-gray-800">{selectedInvoice?.guest}</p>
-            <p className="text-xs text-gray-500">
-              Reservation ID: {selectedInvoice?.resId}
-            </p>
-          </div>
-
-          <table className="mb-8 w-full text-sm">
-            <thead className="bg-gray-50 text-left text-gray-500">
-              <tr>
-                <th className="rounded-l-xl p-3 font-medium">Description</th>
-                <th className="p-3 text-right font-medium">Qty/Nights</th>
-                <th className="rounded-r-xl p-3 text-right font-medium">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-700">
-              <tr className="border-b border-gray-50">
-                <td className="p-3">Deluxe Room (King)</td>
-                <td className="p-3 text-right">2</td>
-                <td className="p-3 text-right">LKR 50,000</td>
-              </tr>
-              <tr className="border-b border-gray-50">
-                <td className="p-3">Full Board Meal Plan</td>
-                <td className="p-3 text-right">2</td>
-                <td className="p-3 text-right">LKR 15,000</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="flex justify-end">
-            <div className="w-64 space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Subtotal</span>
-                <span>LKR 65,000</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Service Charge (10%)</span>
-                <span>LKR 6,500</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Tax (15%)</span>
-                <span>LKR 9,750</span>
-              </div>
-              <Divider className="my-2" />
-              <div className="flex items-center justify-between rounded-xl bg-blue-50 p-3">
-                <span className="font-bold text-blue-900">Total</span>
-                <span className="font-['Outfit'] text-xl font-black text-blue-600">
-                  LKR 81,250
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 flex items-center gap-2 text-xs italic text-gray-400">
-          <CheckCircle2 size={14} className="text-green-500" /> This is a
-          computer-generated invoice and requires no signature.
-        </div>
+        {selectedInvoice && (
+          <Invoice
+            reservation={selectedInvoice}
+            users={usersData?.data || []}
+            rooms={rooms?.data || []}
+            roomTypes={roomTypes?.data || []}
+            mealPlans={mealPlans?.data || []}
+            foodItems={foodItems?.data || []}
+          />
+        )}
       </Drawer>
     </div>
   );

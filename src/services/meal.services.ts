@@ -25,28 +25,28 @@ const handleRequest = async ({
 const mealService = () => {
   return {
     // Meal Plans
-    getAllMealPlans: () => handleRequest({ url: 'api/v1/meal-plans', method: 'get' }),
+    getAllMealPlans: () => handleRequest({ url: 'api/v1/meal-plans/all', method: 'get' }),
 
     createMealPlan: (data: MealPlan) =>
-      handleRequest({ url: 'api/v1/meal-plans', data, method: 'post' }),
+      handleRequest({ url: 'api/v1/meal-plans/add', data, method: 'post' }),
 
-    updateMealPlan: (id: string, data: Partial<MealPlan>) =>
-      handleRequest({ url: `api/v1/meal-plans/${id}`, data, method: 'put' }),
+    updateMealPlan: (data: Partial<MealPlan>) =>
+      handleRequest({ url: `api/v1/meal-plans/update`, data, method: 'put' }),
 
     deleteMealPlan: (id: string) =>
-      handleRequest({ url: `api/v1/meal-plans/${id}`, method: 'delete' }),
+      handleRequest({ url: `api/v1/meal-plans/delete/${id}`, method: 'delete' }),
 
     // Food Items
-    getAllFoodItems: () => handleRequest({ url: 'api/v1/food-items', method: 'get' }),
+    getAllFoodItems: () => handleRequest({ url: 'api/v1/food-items/all', method: 'get' }),
 
     addFoodItem: (data: FoodItem) =>
-      handleRequest({ url: 'api/v1/food-items', data, method: 'post' }),
+      handleRequest({ url: 'api/v1/food-items/add', data, method: 'post' }),
 
-    updateFoodItem: (id: string, data: Partial<FoodItem>) =>
-      handleRequest({ url: `api/v1/food-items/${id}`, data, method: 'put' }),
+    updateFoodItem: (data: Partial<FoodItem>) =>
+      handleRequest({ url: `api/v1/food-items/update`, data, method: 'put' }),
 
     deleteFoodItem: (id: string) =>
-      handleRequest({ url: `api/v1/food-items/${id}`, method: 'delete' }),
+      handleRequest({ url: `api/v1/food-items/delete/${id}`, method: 'delete' }),
   };
 };
 

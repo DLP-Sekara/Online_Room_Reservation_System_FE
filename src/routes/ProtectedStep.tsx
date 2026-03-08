@@ -1,7 +1,10 @@
-import type { ProtectedRouteTypes } from '../types/onBoarding.interfaces';
+import { Navigate, Outlet } from 'react-router-dom';
 
-export default function ProtectedStep({ children }: ProtectedRouteTypes) {
-  //protecting logic goes here
+const ProtectedRoute = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
+  if (!isAuthenticated) {
+     return <Navigate to="/login" replace />;
+  }
+   return <Outlet />;
+};
 
-  return children;
-}
+export default ProtectedRoute;

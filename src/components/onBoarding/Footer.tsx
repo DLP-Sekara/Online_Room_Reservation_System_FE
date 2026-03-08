@@ -10,21 +10,12 @@ const Footer = () => {
 
       <div className="relative w-fit text-center font-['Outfit',Helvetica] text-xs font-normal leading-[14px] tracking-[0] sm:text-sm lg:text-base">
         <a
-          href="/terms-of-service"
+          href="/user-guide"
           target="_blank"
           rel="noopener noreferrer"
           className="text-[#0168ff] underline"
         >
-          Terms of service
-        </a>
-        <span className="text-[#3f3f3f]"> and </span>
-        <a
-          href="/privacy-policy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#0168ff] underline"
-        >
-          Privacy policy.
+          View User Guide
         </a>
       </div>
     </footer>

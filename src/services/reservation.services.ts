@@ -6,6 +6,9 @@ import type {
   ServiceRequestArgs,
 } from '../types/services.interfaces';
 
+/**
+ * Common request handler to manage axios calls and error boundaries
+ */
 const handleRequest = async ({
   url,
   data,
@@ -24,39 +27,33 @@ const handleRequest = async ({
 
 const reservationService = () => {
   return {
-    getAllReservations: () =>
-      handleRequest({ url: 'api/v1/reservations', method: 'get' }),
+    getAllReservations: (data:any) =>
+      handleRequest({ url: 'api/v1/reservations/all',data, method: 'get' }),
 
     getReservationById: (id: string) =>
       handleRequest({ url: `api/v1/reservations/${id}`, method: 'get' }),
 
     createReservation: (data: Reservation) =>
-      handleRequest({ url: 'api/v1/reservations', data, method: 'post' }),
-
-    updateReservation: (id: string, data: Partial<Reservation>) =>
-      handleRequest({ url: `api/v1/reservations/${id}`, data, method: 'put' }),
+      handleRequest({ url: 'api/v1/reservations/create', data, method: 'post' }),
 
     deleteReservation: (id: string) =>
-      handleRequest({ url: `api/v1/reservations/${id}`, method: 'delete' }),
+      handleRequest({ url: `api/v1/reservations/delete/${id}`, method: 'delete' }),
 
-    checkRoomAvailability: (data: AvailabilityCheck) =>
+    getAvailableRooms: (data: AvailabilityCheck) =>
       handleRequest({
-        url: 'api/v1/reservations/check-availability',
+        url: 'api/v1/reservations/available-rooms',
         data,
-        method: 'post',
-      }),
-
-    checkGuestAvailability: (phone: string) =>
-      handleRequest({
-        url: `api/v1/reservations/guest-availability/${phone}`,
         method: 'get',
       }),
 
-    calculateBillAndComplete: (id: string) =>
+    checkOutGuest: (resId: string) =>
       handleRequest({
-        url: `api/v1/reservations/${id}/complete-billing`,
-        method: 'post',
+        url: `api/v1/reservations/checkout/${resId}`,
+        method: 'put',
       }),
+
+    getAllIncomesByMonth: (data: any) =>
+      handleRequest({ url: 'api/v1/reservations/income-stats', data, method: 'get' }),
   };
 };
 

@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -11,7 +12,13 @@ import {
 
 import { Link, useLocation } from 'react-router-dom';
 
-const MainSidebar = () => {
+const MainSidebar = ({
+  handleLogout,
+  loading,
+}: {
+  handleLogout: () => void;
+  loading: boolean;
+}) => {
   const location = useLocation();
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
@@ -69,10 +76,16 @@ const MainSidebar = () => {
 
       {/* 🚪 Logout Section */}
       <div className="border-t border-blue-900/50 p-4">
-        <button className="flex w-full items-center gap-4 rounded-xl bg-red-500/10 px-4 py-3 text-red-400 transition-all duration-300 hover:bg-red-500 hover:text-white">
+        <Button
+          loading={loading}
+          onClick={() => {
+            handleLogout();
+          }}
+          className="flex w-full items-center gap-4 rounded-xl bg-red-500/10 px-4 py-3 text-red-400 transition-all duration-300 hover:bg-red-500 hover:text-white border-none"
+        >
           <LogOut size={20} />
           <span className="text-sm font-medium">Log Out</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

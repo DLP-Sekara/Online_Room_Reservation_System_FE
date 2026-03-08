@@ -1,51 +1,57 @@
 import { Col, Row, Tag, Button } from 'antd';
-import {
-  UserPlus,
-  BedDouble,
-  LogOut,
-  ChevronRight,
-  Clock,
-  CheckCircle2,
-} from 'lucide-react';
+import { UserPlus, BedDouble, LogOut, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import roomMutation from '../../mutations/room.mutation';
+import reservationMutation from '../../mutations/reservation.mutation';
+import userMutation from '../../mutations/user.mutation';
+import dayjs from 'dayjs';
 
 const MainDashboard = () => {
+  //------------------------------------------------ mutations -----------------------------------------------
+  const { getAllRoomTypesMutation, getAllRoomsMutation } = roomMutation();
+  const { getAllReservationsQuery } = reservationMutation();
+  const { getAllUsersMutation } = userMutation();
+  const reservationFilters = {
+    page: 0,
+    size: 1000,
+  };
+
+  const { data: rooms } = getAllRoomsMutation();
+  const { data: roomTypes } = getAllRoomTypesMutation();
+  const { data: reservationsData } = getAllReservationsQuery(reservationFilters);
+  const { data: usersData } = getAllUsersMutation();
+
   const stats = [
     {
-      title: "Today's Arrivals",
-      value: '45',
-      sub: 'Guests arriving',
+      title: "Today's Guests",
+      value: usersData?.data?.length,
+      sub: 'Guests checked in',
       icon: <UserPlus className="text-white" />,
       color: 'bg-[#2CB1BC]',
     },
     {
       title: 'Occupied Rooms',
-      value: '180 / 250',
+      value:
+        rooms?.data?.filter((room: any) => room.status === 'OCCUPIED').length +
+        '/' +
+        rooms?.data?.length,
       sub: 'Rooms currently occupied',
       icon: <BedDouble className="text-white" />,
       color: 'bg-[#91C788]',
     },
     {
       title: 'Pending Checkouts',
-      value: '70',
+      value: reservationsData?.data?.content?.filter(
+        (res: any) =>
+          res.checkOut === dayjs().format('YYYY-MM-DD') && res.status === 'PENDING',
+      ).length,
       sub: "Today's ready for checkout",
       icon: <LogOut className="text-white" />,
       color: 'bg-[#F38181]',
     },
   ];
 
-  const rooms = Array(10).fill({
-    no: '101',
-    type: 'Deluxe King',
-    status: 'Occupied', // Occupied, Cleaning, Available
-  });
-
-  const activities = [
-    { text: 'Guest John Doe checked into Room 105', time: '2 mins ago' },
-    { text: 'Reservation #2024-03-10 confirmed', time: '15 mins ago' },
-    { text: "Room 202 marked as 'Cleaning'", time: '1 hour ago' },
-    { text: 'New booking added for April 12th', time: '2 hours ago' },
-    { text: 'Payment received for Res #5542', time: '5 hours ago' },
-  ];
+  const navigate = useNavigate();
 
   return (
     <div className="animate-in fade-in space-y-8 duration-500">
@@ -76,66 +82,53 @@ const MainDashboard = () => {
       </Row>
 
       {/* 2. Live Room Status Grid */}
-      <div className="rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm">
+      <div className="rounded-[2rem] border border-gray-100 bg-white p-4 shadow-md">
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#0F2942]">Live Room Status</h3>
           <Button
             type="text"
             className="flex items-center gap-1 text-blue-500 hover:text-orange-500"
+            onClick={() => navigate('/dashboard/rooms')}
           >
             Show More <ChevronRight size={16} />
           </Button>
         </div>
 
         <Row gutter={[16, 16]}>
-          {rooms.map((room, i) => (
+          {rooms?.data?.map((room: any, i: number) => (
             <Col xs={12} sm={8} md={6} lg={4.8} key={i}>
               <div className="cursor-pointer rounded-2xl border border-gray-50 bg-[#F8FAFC] p-4 shadow-md transition-all hover:bg-white">
                 <div
                   className={`mb-3 flex h-8 w-full items-center justify-start rounded-t-xl ${i % 3 === 0 ? 'bg-blue-400' : i % 3 === 1 ? 'bg-teal-400' : 'bg-green-400 opacity-50'}`}
                 >
-                  <span className="ml-4 text-lg font-bold text-gray-800">{room.no}</span>
+                  <span className="ml-4 text-lg font-bold text-gray-800">
+                    {room.roomNumber}
+                  </span>
                 </div>
-                <p className="mb-2 text-[11px] text-gray-500">{room.type}</p>
+                <p className="mb-2 text-[12px] text-gray-500">
+                  {
+                    roomTypes?.data?.find((type: any) => type.typeId === room.typeId)
+                      ?.typeName
+                  }
+                </p>
                 <Tag
-                  color={i % 3 === 0 ? 'blue' : i % 3 === 1 ? 'cyan' : 'green'}
-                  className="rounded-full px-3 text-[10px]"
+                  color={
+                    room.status === 'AVAILABLE'
+                      ? 'green'
+                      : room.status === 'CLEANING'
+                        ? 'gold'
+                        : room.status === 'OCCUPIED'
+                          ? 'blue'
+                          : 'red'
+                  }
+                  className="rounded-full px-3"
                 >
-                  {i % 3 === 0 ? 'Occupied' : i % 3 === 1 ? 'Cleaning' : 'Available'}
+                  {room.status}
                 </Tag>
               </div>
             </Col>
           ))}
         </Row>
-      </div>
-
-      {/* 3. Recent Activity Section */}
-      <div className="rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm">
-        <h3 className="mb-6 text-xl font-bold text-[#0F2942]">Recent Activity</h3>
-        <div className="space-y-6">
-          {activities.map((act, i) => (
-            <div
-              key={i}
-              className="group flex cursor-pointer items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-500 transition-colors group-hover:bg-orange-50 group-hover:text-orange-500">
-                  <CheckCircle2 size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{act.text}</p>
-                  <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                    <Clock size={12} /> {act.time}
-                  </span>
-                </div>
-              </div>
-              <ChevronRight
-                size={16}
-                className="text-gray-300 group-hover:text-blue-500"
-              />
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

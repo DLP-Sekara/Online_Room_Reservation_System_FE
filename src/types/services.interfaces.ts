@@ -1,4 +1,3 @@
-
 // 1. Dashboard Interfaces
 export interface Notification {
   id: string;
@@ -17,52 +16,63 @@ export interface DashboardDetails {
 
 // 2. Reservation Interfaces
 export interface Reservation {
+  additionalFoodCost: number;
+  reservationDetails: any;
+  planId: any;
+  typeId: any;
+  resId: any;
+  roomId: any;
   id?: string;
   guestId?: string;
   guestName: string;
-  roomNo: string;
-  roomType: string;
-  mealPlanId: string;
+  roomNo?: string;
+  roomType?: string;
+  mealPlanId?: string;
   checkIn: string;
   checkOut: string;
   contactNo: string;
   email?: string;
-  status: 'Pending' | 'Confirmed' | 'Cancelled' | 'CheckedIn' | 'CheckedOut';
+  guestCount?: number;
+  status:
+    | 'PENDING'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'CONFIRMED'
+    | 'CHECKED_IN'
+    | 'CHECKED_OUT';
   totalAmount: number;
+  totalBill?: number;
 }
 
 export interface AvailabilityCheck {
-  roomId?: string;
-  roomType?: string;
-  startDate: string;
-  endDate: string;
+  typeId?: string;
+  checkIn: string;
+  checkOut: string;
 }
 
 // 3. Room Interfaces
 export interface Room {
-  id?: string;
-  roomNo: string;
-  roomType: string;
-  price: number;
-  status: 'Available' | 'Occupied' | 'Out of Order';
-  cleaningStatus: 'Ready' | 'Dirty' | 'Maintenance';
+  roomId?: string;
+  roomNumber: string;
+  typeId: string;
+  status: 'AVAILABLE' | 'OCCUPIED' | 'OUT_OF_ORDER' | 'CLEANING';
 }
 
 // 4. Meal & Food Interfaces
 export interface MealPlan {
-  id?: string;
-  planName: string;
+  planId?: string;
+  name: string;
   planCode: string; // e.g., BB, HB, FB
-  pricePerPerson: number;
+  price: number;
+  description?: string;
   status: 'Active' | 'Inactive';
 }
 
 export interface FoodItem {
-  id?: string;
+  itemId?: string;
   name: string;
-  category: string;
-  price: number;
-  status: 'Available' | 'Unavailable';
+  unitPrice: number;
+  quantityOnHand: number;
 }
 
 // 5. Payment & Billing Interfaces
@@ -84,13 +94,10 @@ export interface IncomeReport {
 
 // 6. User & Session Interfaces
 export interface UserAccount {
-  id?: string;
-  fullName: string;
-  username: string;
-  email: string;
-  role: 'Admin' | 'Manager' | 'Receptionist';
-  status: 'Active' | 'Inactive';
-  password?: string;
+  guestId?: string;
+  name: string;
+  nic?: string;
+  phone?: string;
 }
 
 export interface UserSession {
@@ -105,5 +112,5 @@ export interface UserSession {
 export interface ServiceRequestArgs {
   url: string;
   data?: any;
-  method?: 'get' | 'post' | 'put' | 'delete';
+  method?: 'get' | 'post' | 'put' | 'delete' | 'patch';
 }

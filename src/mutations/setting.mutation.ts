@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { errorToast, successToast } from '../components/common/Alert';
 import type { APIResponse } from '../types/onBoarding.interfaces';
 import type { UserAccount } from '../types/services.interfaces';
@@ -6,7 +6,7 @@ import settingService from '../services/setting.services';
 
 const settingMutation = () => {
   const queryClient = useQueryClient();
-  const { addNewAdmin, changePassword } = settingService();
+  const { addNewAdmin, changePassword, getAllSystemUsers } = settingService();
 
   const addNewAdminMutation = () => {
     return useMutation({
@@ -14,7 +14,7 @@ const settingMutation = () => {
       onSuccess: (response: APIResponse) => {
         if (response.success) {
           successToast(response.message);
-          queryClient.invalidateQueries({ queryKey: ['users', 'admins'] });
+          queryClient.invalidateQueries({ queryKey: ['system-users'] });
         } else {
           errorToast(response.message);
         }
@@ -41,9 +41,17 @@ const settingMutation = () => {
     });
   };
 
+  const getAllSystemUsersQuery = () => {
+    return useQuery({
+      queryKey: ['system-users'],
+      queryFn: () => getAllSystemUsers(),
+    });
+  };
+
   return {
     addNewAdminMutation,
     changePasswordMutation,
+    getAllSystemUsersQuery,
   };
 };
 

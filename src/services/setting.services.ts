@@ -21,13 +21,16 @@ const handleRequest = async ({
 const settingService = () => {
   return {
     addNewAdmin: (data: UserAccount) =>
-      handleRequest({ url: 'api/v1/settings/admins', data, method: 'post' }),
+      handleRequest({ url: 'api/v1/auth/signup', data, method: 'post' }),
 
     changePassword: (data: any) =>
       handleRequest({ url: 'api/v1/settings/change-password', data, method: 'post' }),
 
     getCurrentSessions: () =>
       handleRequest({ url: 'api/v1/settings/sessions', method: 'get' }),
+
+    getAllSystemUsers: () =>
+      handleRequest({ url: 'api/v1/auth/all-users', method: 'get' }),
   };
 };
 
